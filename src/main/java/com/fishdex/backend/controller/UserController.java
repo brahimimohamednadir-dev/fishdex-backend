@@ -3,6 +3,7 @@ package com.fishdex.backend.controller;
 import com.fishdex.backend.common.ApiResponse;
 import com.fishdex.backend.dto.UpdateUsernameRequest;
 import com.fishdex.backend.dto.UserResponse;
+import com.fishdex.backend.dto.UserStatsResponse;
 import com.fishdex.backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,5 +31,10 @@ public class UserController {
     ) {
         UserResponse response = userService.updateUsername(authentication.getName(), request);
         return ResponseEntity.ok(ApiResponse.ok("Profil mis à jour", response));
+    }
+
+    @GetMapping("/me/stats")
+    public ResponseEntity<ApiResponse<UserStatsResponse>> getStats(Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(userService.getStats(authentication.getName())));
     }
 }

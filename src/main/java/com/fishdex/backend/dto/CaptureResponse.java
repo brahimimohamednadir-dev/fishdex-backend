@@ -14,6 +14,7 @@ public class CaptureResponse {
     private Long userId;
     private String username;
     private String speciesName;
+    private SpeciesResponse species;
     private Double weight;
     private Double length;
     private String photoUrl;
@@ -29,6 +30,7 @@ public class CaptureResponse {
                 .userId(capture.getUser().getId())
                 .username(capture.getUser().getUsername())
                 .speciesName(capture.getSpeciesName())
+                .species(capture.getSpecies() != null ? SpeciesResponse.from(capture.getSpecies()) : null)
                 .weight(capture.getWeight())
                 .length(capture.getLength())
                 .photoUrl(capture.getPhotoUrl())

@@ -3,9 +3,11 @@ package com.fishdex.backend.service;
 import com.fishdex.backend.dto.CaptureRequest;
 import com.fishdex.backend.dto.CaptureResponse;
 import com.fishdex.backend.entity.Capture;
+import com.fishdex.backend.entity.Species;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.exception.BusinessException;
 import com.fishdex.backend.repository.CaptureRepository;
+import com.fishdex.backend.repository.SpeciesRepository;
 import com.fishdex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,9 @@ public class CaptureService {
 
     private final CaptureRepository captureRepository;
     private final UserRepository userRepository;
+    private final SpeciesRepository speciesRepository;
+    private final CloudinaryService cloudinaryService;
+    private final BadgeService badgeService;
 
     @Transactional
     public CaptureResponse createCapture(CaptureRequest request, User user) {
@@ -32,9 +40,12 @@ public class CaptureService {
             );
         }
 
+        Species species = resolveSpecies(request.getSpeciesId());
+
         Capture capture = Capture.builder()
                 .user(user)
                 .speciesName(request.getSpeciesName().trim())
+                .species(species)
                 .weight(request.getWeight())
                 .length(request.getLength())
                 .photoUrl(request.getPhotoUrl())
@@ -48,6 +59,8 @@ public class CaptureService {
 
         user.setCaptureCount(user.getCaptureCount() + 1);
         userRepository.save(user);
+
+        badgeService.checkAndAwardBadges(user);
 
         return CaptureResponse.from(saved);
     }
@@ -69,7 +82,10 @@ public class CaptureService {
     public CaptureResponse updateCapture(Long id, CaptureRequest request, User user) {
         Capture capture = findAndCheckOwner(id, user);
 
+        Species species = resolveSpecies(request.getSpeciesId());
+
         capture.setSpeciesName(request.getSpeciesName().trim());
+        capture.setSpecies(species);
         capture.setWeight(request.getWeight());
         capture.setLength(request.getLength());
         capture.setPhotoUrl(request.getPhotoUrl());
@@ -90,6 +106,33 @@ public class CaptureService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public CaptureResponse addPhoto(Long captureId, MultipartFile photo, User user) {
+        Capture capture = findAndCheckOwner(captureId, user);
+        try {
+            String url = cloudinaryService.uploadPhoto(photo);
+            capture.setPhotoUrl(url);
+            return CaptureResponse.from(captureRepository.save(capture));
+        } catch (IOException e) {
+            throw new BusinessException("Erreur lors de l'upload de la photo : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Transactional
+    public void deletePhoto(Long captureId, User user) {
+        Capture capture = findAndCheckOwner(captureId, user);
+        String photoUrl = capture.getPhotoUrl();
+        if (photoUrl != null && !photoUrl.isBlank()) {
+            try {
+                cloudinaryService.deletePhoto(photoUrl);
+            } catch (IOException e) {
+                throw new BusinessException("Erreur lors de la suppression de la photo : " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+        capture.setPhotoUrl(null);
+        captureRepository.save(capture);
+    }
+
     private Capture findAndCheckOwner(Long id, User user) {
         Capture capture = captureRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Capture introuvable", HttpStatus.NOT_FOUND));
@@ -99,5 +142,13 @@ public class CaptureService {
         }
 
         return capture;
+    }
+
+    private Species resolveSpecies(Long speciesId) {
+        if (speciesId == null) {
+            return null;
+        }
+        return speciesRepository.findById(speciesId)
+                .orElseThrow(() -> new BusinessException("Espèce introuvable avec l'id " + speciesId, HttpStatus.NOT_FOUND));
     }
 }

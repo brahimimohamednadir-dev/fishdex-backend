@@ -12,9 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/captures")
@@ -75,6 +77,27 @@ public class CaptureController {
     ) {
         User user = userService.loadUserByEmail(authentication.getName());
         captureService.deleteCapture(id, user);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<CaptureResponse>> addPhoto(
+            @PathVariable Long id,
+            @RequestParam("photo") MultipartFile photo,
+            Authentication authentication
+    ) {
+        User user = userService.loadUserByEmail(authentication.getName());
+        CaptureResponse response = captureService.addPhoto(id, photo, user);
+        return ResponseEntity.ok(ApiResponse.ok("Photo ajoutée avec succès", response));
+    }
+
+    @DeleteMapping("/{id}/photo")
+    public ResponseEntity<Void> deletePhoto(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User user = userService.loadUserByEmail(authentication.getName());
+        captureService.deletePhoto(id, user);
         return ResponseEntity.noContent().build();
     }
 }

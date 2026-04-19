@@ -6,6 +6,7 @@ import com.fishdex.backend.dto.GroupRequest;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.entity.Group.GroupType;
+import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
 import com.fishdex.backend.repository.GroupMemberRepository;
 import com.fishdex.backend.repository.GroupRepository;
@@ -47,11 +48,15 @@ class GroupControllerTest {
     @Autowired
     private CaptureRepository captureRepository;
 
+    @Autowired
+    private BadgeRepository badgeRepository;
+
     private String token1;
     private String token2;
 
     @BeforeEach
     void setUp() throws Exception {
+        badgeRepository.deleteAll();
         captureRepository.deleteAll();
         groupMemberRepository.deleteAll();
         groupRepository.deleteAll();
@@ -63,6 +68,7 @@ class GroupControllerTest {
 
     @AfterEach
     void tearDown() {
+        badgeRepository.deleteAll();
         captureRepository.deleteAll();
         groupMemberRepository.deleteAll();
         groupRepository.deleteAll();

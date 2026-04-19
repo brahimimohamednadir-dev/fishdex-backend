@@ -5,8 +5,11 @@ import com.fishdex.backend.dto.CaptureRequest;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.entity.Capture;
+import com.fishdex.backend.entity.Species;
 import com.fishdex.backend.entity.User;
+import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
+import com.fishdex.backend.repository.SpeciesRepository;
 import com.fishdex.backend.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,11 +44,18 @@ class CaptureControllerTest {
     @Autowired
     private CaptureRepository captureRepository;
 
+    @Autowired
+    private SpeciesRepository speciesRepository;
+
+    @Autowired
+    private BadgeRepository badgeRepository;
+
     private String token;
     private User testUser;
 
     @BeforeEach
     void setUp() throws Exception {
+        badgeRepository.deleteAll();
         captureRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -74,6 +84,7 @@ class CaptureControllerTest {
 
     @AfterEach
     void tearDown() {
+        badgeRepository.deleteAll();
         captureRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -264,5 +275,28 @@ class CaptureControllerTest {
         mockMvc.perform(get("/api/captures/" + id)
                         .header("Authorization", "Bearer " + token2))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCapture_withSpeciesId_returnsSpeciesInResponse() throws Exception {
+        // Créer une espèce directement en base
+        Species species = speciesRepository.save(Species.builder()
+                .commonName("Brochet de test")
+                .latinName("Esox lucius")
+                .habitat("Eau douce")
+                .build());
+
+        CaptureRequest request = buildCaptureRequest("Brochet de test");
+        request.setSpeciesId(species.getId());
+
+        mockMvc.perform(post("/api/captures")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.species").exists())
+                .andExpect(jsonPath("$.data.species.id").value(species.getId()))
+                .andExpect(jsonPath("$.data.species.commonName").value("Brochet de test"));
     }
 }

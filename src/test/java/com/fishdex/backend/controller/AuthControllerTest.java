@@ -3,6 +3,7 @@ package com.fishdex.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
+import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +29,12 @@ class AuthControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private BadgeRepository badgeRepository;
+
     @BeforeEach
     void setUp() {
+        badgeRepository.deleteAll();
         userRepository.deleteAll();
     }
 
