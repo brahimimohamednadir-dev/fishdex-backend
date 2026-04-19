@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "FishDex S1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "token2", "value": "" },
+    { "key": "capture_id", "value": "" },
+    { "key": "group_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pecheur@fishdex.fr\",\n  \"username\": \"pecheur1\",\n  \"password\": \"motdepasse123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pecheur@fishdex.fr\",\n  \"password\": \"motdepasse123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login — mauvais mot de passe (401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pecheur@fishdex.fr\",\n  \"password\": \"mauvais\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profil",
+      "item": [
+        {
+          "name": "GET /api/users/me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/users/me"
+          }
+        },
+        {
+          "name": "PUT /api/users/me",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/users/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pecheur_pro\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Captures",
+      "item": [
+        {
+          "name": "POST — Créer capture",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('capture_id', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/captures",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"speciesName\": \"Brochet\",\n  \"weight\": 2.4,\n  \"length\": 65.0,\n  \"latitude\": 48.8566,\n  \"longitude\": 2.3522,\n  \"note\": \"Belle prise au bord de la Seine\",\n  \"caughtAt\": \"2026-04-20T08:30:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET — Mes captures (paginé)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/captures?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET — Capture par ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/captures/{{capture_id}}"
+          }
+        },
+        {
+          "name": "PUT — Modifier capture",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/captures/{{capture_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"speciesName\": \"Brochet modifié\",\n  \"weight\": 3.1,\n  \"length\": 70.0,\n  \"caughtAt\": \"2026-04-20T09:00:00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE — Supprimer capture",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/captures/{{capture_id}}"
+          }
+        },
+        {
+          "name": "POST — Sans JWT (401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/api/captures",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"speciesName\": \"Carpe\",\n  \"weight\": 5.0,\n  \"length\": 50.0,\n  \"caughtAt\": \"2026-04-20T10:00:00\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Espèces",
+      "item": [
+        {
+          "name": "GET — Liste espèces",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/species?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET — Recherche espèce",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/species?search=brochet",
+              "query": [{ "key": "search", "value": "brochet" }]
+            }
+          }
+        },
+        {
+          "name": "GET — Espèce par ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/species/1"
+          }
+        },
+        {
+          "name": "GET — ID introuvable (404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/species/99999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Groupes",
+      "item": [
+        {
+          "name": "POST — Créer groupe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('group_id', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/api/groups",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Les Brocheteurs du Nord\",\n  \"description\": \"Club de pêche au brochet de la région Nord\",\n  \"type\": \"CLUB\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET — Détail groupe",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/groups/{{group_id}}"
+          }
+        },
+        {
+          "name": "POST — Rejoindre groupe (token2)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token2}}" }],
+            "url": "{{base_url}}/api/groups/{{group_id}}/join"
+          }
+        },
+        {
+          "name": "POST — Rejoindre déjà membre (409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/api/groups/{{group_id}}/join"
+          }
+        },
+        {
+          "name": "GET — Feed du groupe",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/groups/{{group_id}}/feed?page=0&size=20",
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET — Feed non-membre (403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token2}}" }],
+            "url": "{{base_url}}/api/groups/{{group_id}}/feed"
+          }
+        }
+      ]
+    }
+  ]
+}
