@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CaptureRepository extends JpaRepository<Capture, Long> {
 
@@ -16,4 +17,8 @@ public interface CaptureRepository extends JpaRepository<Capture, Long> {
     Page<Capture> findByUserIdInOrderByCaughtAtDesc(List<Long> userIds, Pageable pageable);
 
     long countByUserId(Long userId);
+
+    long countByUserIdAndPhotoUrlIsNotNull(Long userId);
+
+    Optional<Capture> findTopByUserIdOrderByWeightDesc(Long userId);
 }

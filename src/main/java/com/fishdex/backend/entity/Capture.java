@@ -46,6 +46,10 @@ public class Capture {
     @Column(length = 500)
     private String note;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id")
+    private Species species;
+
     @Column(name = "caught_at", nullable = false)
     private LocalDateTime caughtAt;
 

@@ -37,4 +37,6 @@ public class CaptureRequest {
 
     @NotNull(message = "La date de capture est obligatoire")
     private LocalDateTime caughtAt;
+
+    private Long speciesId; // nullable — lien optionnel vers Species
 }

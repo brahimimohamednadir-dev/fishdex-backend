@@ -27,6 +27,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final CaptureRepository captureRepository;
+    private final BadgeService badgeService;
 
     @Transactional
     public GroupResponse createGroup(GroupRequest request, User creator) {
@@ -74,6 +75,8 @@ public class GroupService {
                 .role(MemberRole.MEMBER)
                 .build();
         groupMemberRepository.save(member);
+
+        badgeService.awardFirstGroup(user);
     }
 
     @Transactional(readOnly = true)
