@@ -13,5 +13,7 @@ public interface CaptureRepository extends JpaRepository<Capture, Long> {
 
     Page<Capture> findByUserIdOrderByCaughtAtDesc(Long userId, Pageable pageable);
 
+    Page<Capture> findByUserIdInOrderByCaughtAtDesc(List<Long> userIds, Pageable pageable);
+
     long countByUserId(Long userId);
 }
