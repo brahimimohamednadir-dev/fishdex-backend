@@ -102,8 +102,10 @@ class SpeciesControllerTest {
     }
 
     @Test
-    void getSpecies_withoutJwt_returns401() throws Exception {
+    void getSpecies_withoutJwt_returns200() throws Exception {
+        // /api/species est public — catalogue accessible sans connexion
         mockMvc.perform(get("/api/species"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(20));
     }
 }
