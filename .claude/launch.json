@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FishDex Frontend (Angular)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start", "--prefix", "C:/Users/33767/Projects/fishdex-frontend"],
+      "port": 4200
+    },
+    {
+      "name": "FishDex Backend (Spring Boot)",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:/Users/33767/Projects/fishdex-backend/mvnw.cmd", "spring-boot:run", "-f", "C:/Users/33767/Projects/fishdex-backend/pom.xml"],
+      "port": 8080
+    }
+  ]
+}
