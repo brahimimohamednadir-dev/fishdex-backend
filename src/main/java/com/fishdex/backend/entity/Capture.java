@@ -28,6 +28,11 @@ public class Capture {
     @Column(name = "species_name", nullable = false, length = 100)
     private String speciesName;
 
+    /** Lien optionnel vers le catalogue (null si espèce non répertoriée) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "species_id")
+    private Species species;
+
     @Column(nullable = false)
     private Double weight;
 

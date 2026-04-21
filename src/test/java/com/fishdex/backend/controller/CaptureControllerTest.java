@@ -7,6 +7,9 @@ import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.entity.Capture;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.repository.CaptureRepository;
+import com.fishdex.backend.repository.EmailVerificationTokenRepository;
+import com.fishdex.backend.repository.PreAuthTokenRepository;
+import com.fishdex.backend.repository.RefreshTokenRepository;
 import com.fishdex.backend.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,17 +32,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class CaptureControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CaptureRepository captureRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private CaptureRepository captureRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired private PreAuthTokenRepository preAuthTokenRepository;
 
     private String token;
     private User testUser;
@@ -47,34 +46,38 @@ class CaptureControllerTest {
     @BeforeEach
     void setUp() throws Exception {
         captureRepository.deleteAll();
+        preAuthTokenRepository.deleteAll();
+        emailVerificationTokenRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("pecheur@fishdex.fr");
         register.setUsername("pecheur1");
-        register.setPassword("motdepasse123");
-
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
 
         LoginRequest login = new LoginRequest();
         login.setEmail("pecheur@fishdex.fr");
-        login.setPassword("motdepasse123");
-
+        login.setPassword("Motdepasse1!");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))
                 .andReturn();
 
-        String body = result.getResponse().getContentAsString();
-        token = objectMapper.readTree(body).at("/data/token").asText();
+        token = objectMapper.readTree(result.getResponse().getContentAsString())
+                .at("/data/token").asText();
         testUser = userRepository.findByEmail("pecheur@fishdex.fr").orElseThrow();
     }
 
     @AfterEach
     void tearDown() {
         captureRepository.deleteAll();
+        preAuthTokenRepository.deleteAll();
+        emailVerificationTokenRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -89,12 +92,10 @@ class CaptureControllerTest {
 
     @Test
     void createCapture_withValidJwt_returns201() throws Exception {
-        CaptureRequest request = buildCaptureRequest("Brochet");
-
         mockMvc.perform(post("/api/captures")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(buildCaptureRequest("Brochet"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.speciesName").value("Brochet"))
@@ -104,18 +105,16 @@ class CaptureControllerTest {
 
     @Test
     void createCapture_withoutJwt_returns401() throws Exception {
-        CaptureRequest request = buildCaptureRequest("Carpe");
-
         mockMvc.perform(post("/api/captures")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(buildCaptureRequest("Carpe"))))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void createCapture_invalidRequest_returns400() throws Exception {
+        // Pas de speciesName, pas de speciesId, pas de weight, pas de length
         CaptureRequest request = new CaptureRequest();
-        // speciesName manquant, weight manquant
 
         mockMvc.perform(post("/api/captures")
                         .header("Authorization", "Bearer " + token)
@@ -207,7 +206,6 @@ class CaptureControllerTest {
 
     @Test
     void createCapture_freemiumLimit_returns403() throws Exception {
-        // Insertion directe de 50 captures en base pour simuler la limite
         List<Capture> captures = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
             captures.add(Capture.builder()
@@ -232,18 +230,17 @@ class CaptureControllerTest {
 
     @Test
     void getCaptureById_anotherUsersCapture_returns403() throws Exception {
-        // Créer un second utilisateur
         RegisterRequest register2 = new RegisterRequest();
         register2.setEmail("autre@fishdex.fr");
         register2.setUsername("autreuser");
-        register2.setPassword("motdepasse123");
+        register2.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register2)));
 
         LoginRequest login2 = new LoginRequest();
         login2.setEmail("autre@fishdex.fr");
-        login2.setPassword("motdepasse123");
+        login2.setPassword("Motdepasse1!");
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login2)))
@@ -251,7 +248,6 @@ class CaptureControllerTest {
         String token2 = objectMapper.readTree(loginResult.getResponse().getContentAsString())
                 .at("/data/token").asText();
 
-        // Créer une capture avec user1
         MvcResult result = mockMvc.perform(post("/api/captures")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -260,7 +256,6 @@ class CaptureControllerTest {
         Long id = objectMapper.readTree(result.getResponse().getContentAsString())
                 .at("/data/id").asLong();
 
-        // Tenter d'y accéder avec user2
         mockMvc.perform(get("/api/captures/" + id)
                         .header("Authorization", "Bearer " + token2))
                 .andExpect(status().isForbidden());
