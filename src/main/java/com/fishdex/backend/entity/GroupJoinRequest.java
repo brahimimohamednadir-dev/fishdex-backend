@@ -10,16 +10,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "group_members",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"group_id", "user_id"}))
+@Table(name = "group_join_requests")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupMember {
+public class GroupJoinRequest {
 
-    public enum MemberRole {
-        OWNER, ADMIN, MODERATOR, MEMBER
+    public enum RequestStatus {
+        PENDING, ACCEPTED, REJECTED
     }
 
     @Id
@@ -34,12 +33,15 @@ public class GroupMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(length = 500)
+    private String message;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private MemberRole role = MemberRole.MEMBER;
+    private RequestStatus status = RequestStatus.PENDING;
 
     @CreationTimestamp
-    @Column(name = "joined_at", nullable = false, updatable = false)
-    private LocalDateTime joinedAt;
+    @Column(name = "requested_at", nullable = false, updatable = false)
+    private LocalDateTime requestedAt;
 }

@@ -17,10 +17,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Group {
 
-    public enum GroupType {
-        CLUB,
-        ASSOCIATION,
-        PRIVATE
+    public enum GroupVisibility {
+        PUBLIC, PRIVATE, SECRET
+    }
+
+    public enum GroupCategory {
+        CLUB, ASSOCIATION, FRIENDS, COMPETITION
     }
 
     @Id
@@ -34,8 +36,24 @@ public class Group {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private GroupType type;
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private GroupVisibility visibility = GroupVisibility.PUBLIC;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private GroupCategory category = GroupCategory.FRIENDS;
+
+    @Column(name = "cover_photo_url")
+    private String coverPhotoUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String rules;
+
+    @Column(name = "post_count", nullable = false)
+    @Builder.Default
+    private Integer postCount = 0;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_id", nullable = false)

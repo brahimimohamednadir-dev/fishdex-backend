@@ -2,7 +2,8 @@ package com.fishdex.backend.config;
 
 import com.fishdex.backend.entity.*;
 import com.fishdex.backend.entity.Badge.BadgeType;
-import com.fishdex.backend.entity.Group.GroupType;
+import com.fishdex.backend.entity.Group.GroupVisibility;
+import com.fishdex.backend.entity.Group.GroupCategory;
 import com.fishdex.backend.entity.GroupMember.MemberRole;
 import com.fishdex.backend.repository.*;
 import com.fishdex.backend.service.BadgeService;
@@ -131,14 +132,16 @@ public class DevDataInitializer implements ApplicationRunner {
         Group carpistes = groupRepository.save(Group.builder()
                 .name("Carpistes Île-de-France")
                 .description("Le groupe des passionnés de carpe en région parisienne. Sorties collectives, bons plans étangs et conseils montages.")
-                .type(GroupType.CLUB)
+                .visibility(GroupVisibility.PUBLIC)
+                .category(GroupCategory.CLUB)
                 .creator(marc)
                 .build());
 
         Group rhone = groupRepository.save(Group.builder()
                 .name("Pêcheurs du Rhône")
                 .description("Association de pêche sur le bassin du Rhône. Truites, barbeaux, chevaines — la pêche en rivière dans toute sa splendeur.")
-                .type(GroupType.ASSOCIATION)
+                .visibility(GroupVisibility.PUBLIC)
+                .category(GroupCategory.ASSOCIATION)
                 .creator(pierre)
                 .build());
 

@@ -10,17 +10,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "group_members",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"group_id", "user_id"}))
+@Table(name = "posts")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupMember {
-
-    public enum MemberRole {
-        OWNER, ADMIN, MODERATOR, MEMBER
-    }
+public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,12 +29,21 @@ public class GroupMember {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "capture_id")
+    private Capture capture;
+
+    @Column(nullable = false)
     @Builder.Default
-    private MemberRole role = MemberRole.MEMBER;
+    private boolean pinned = false;
+
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
 
     @CreationTimestamp
-    @Column(name = "joined_at", nullable = false, updatable = false)
-    private LocalDateTime joinedAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

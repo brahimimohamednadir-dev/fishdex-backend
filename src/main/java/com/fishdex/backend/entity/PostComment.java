@@ -10,36 +10,40 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "group_members",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"group_id", "user_id"}))
+@Table(name = "post_comments")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupMember {
-
-    public enum MemberRole {
-        OWNER, ADMIN, MODERATOR, MEMBER
-    }
+public class PostComment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private PostComment parent;
+
+    @Column(name = "like_count", nullable = false)
     @Builder.Default
-    private MemberRole role = MemberRole.MEMBER;
+    private int likeCount = 0;
+
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
 
     @CreationTimestamp
-    @Column(name = "joined_at", nullable = false, updatable = false)
-    private LocalDateTime joinedAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

@@ -5,21 +5,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "group_members",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"group_id", "user_id"}))
+@Table(name = "post_reactions",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "user_id"}))
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupMember {
+public class PostReaction {
 
-    public enum MemberRole {
-        OWNER, ADMIN, MODERATOR, MEMBER
+    public enum ReactionType {
+        LIKE, FIRE, TROPHY, WOW
     }
 
     @Id
@@ -27,8 +24,8 @@ public class GroupMember {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -36,10 +33,5 @@ public class GroupMember {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
-    private MemberRole role = MemberRole.MEMBER;
-
-    @CreationTimestamp
-    @Column(name = "joined_at", nullable = false, updatable = false)
-    private LocalDateTime joinedAt;
+    private ReactionType type;
 }

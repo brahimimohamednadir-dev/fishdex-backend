@@ -1,8 +1,7 @@
 package com.fishdex.backend.controller;
 
 import com.fishdex.backend.common.ApiResponse;
-import com.fishdex.backend.dto.FeedItemResponse;
-import com.fishdex.backend.dto.GroupResponse;
+import com.fishdex.backend.dto.*;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.service.GroupService;
 import com.fishdex.backend.service.UserService;
@@ -13,15 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Endpoints groupes — correspond aux appels du frontend Angular (GroupService).
- *
- * POST   /api/groups              — createGroup
- * GET    /api/groups/{id}         — getGroupById
- * POST   /api/groups/{id}/join    — joinGroup
- * GET    /api/groups/{id}/feed    — getGroupFeed
- */
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/groups")
 @RequiredArgsConstructor
@@ -30,50 +24,173 @@ public class GroupController {
     private final GroupService groupService;
     private final UserService userService;
 
-    /** POST /api/groups — Créer un groupe */
-    @PostMapping
-    public ResponseEntity<ApiResponse<GroupResponse>> createGroup(
-            @RequestBody GroupRequest request,
-            Authentication authentication) {
+    // ── Mes groupes ───────────────────────────────────────────────────────
 
-        User user = userService.loadUserByEmail(authentication.getName());
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<GroupResponse>>> getMyGroups(Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(groupService.getMyGroups(user)));
+    }
+
+    // ── Découverte ────────────────────────────────────────────────────────
+
+    @GetMapping("/discover")
+    public ResponseEntity<ApiResponse<Page<GroupResponse>>> discover(
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "") String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        Page<GroupResponse> result = groupService.discoverGroups(search, category, PageRequest.of(page, size), user);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    // ── Créer ─────────────────────────────────────────────────────────────
+
+    @PostMapping(consumes = {"multipart/form-data", "application/json"})
+    public ResponseEntity<ApiResponse<GroupResponse>> createGroup(
+            @RequestParam("name") String name,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "visibility", defaultValue = "PUBLIC") String visibility,
+            @RequestParam(value = "category", defaultValue = "FRIENDS") String category,
+            @RequestParam(value = "rules", required = false) String rules,
+            @RequestParam(value = "coverPhoto", required = false) MultipartFile coverPhoto,
+            Authentication auth) {
+
+        User user = userService.loadUserByEmail(auth.getName());
+        // TODO: upload coverPhoto vers Cloudinary si fourni
+        String coverPhotoUrl = null;
         GroupResponse response = groupService.createGroup(
-                request.name(), request.description(), request.type(), user);
+                name, description, visibility, category, rules, coverPhotoUrl, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Groupe créé", response));
     }
 
-    /** GET /api/groups/{id} — Détails d'un groupe */
+    // ── Détails ───────────────────────────────────────────────────────────
+
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<GroupResponse>> getGroupById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.ok(groupService.getGroupById(id)));
+    public ResponseEntity<ApiResponse<GroupResponse>> getById(
+            @PathVariable Long id, Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(groupService.getGroupById(id, user)));
     }
 
-    /** POST /api/groups/{id}/join — Rejoindre un groupe */
+    // ── Supprimer ─────────────────────────────────────────────────────────
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id, Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        groupService.deleteGroup(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Groupe supprimé", null));
+    }
+
+    // ── Rejoindre ─────────────────────────────────────────────────────────
+
     @PostMapping("/{id}/join")
-    public ResponseEntity<ApiResponse<Void>> joinGroup(
+    public ResponseEntity<ApiResponse<GroupResponse>> join(
             @PathVariable Long id,
-            Authentication authentication) {
-
-        User user = userService.loadUserByEmail(authentication.getName());
-        groupService.joinGroup(id, user);
-        return ResponseEntity.ok(ApiResponse.ok("Vous avez rejoint le groupe", null));
+            @RequestBody(required = false) JoinBody body,
+            Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        String message = body != null ? body.message() : null;
+        GroupResponse response = groupService.joinGroup(id, message, user);
+        return ResponseEntity.ok(ApiResponse.ok("Demande envoyée", response));
     }
 
-    /** GET /api/groups/{id}/feed?page=0&size=20 — Fil d'activité du groupe */
-    @GetMapping("/{id}/feed")
-    public ResponseEntity<ApiResponse<Page<FeedItemResponse>>> getGroupFeed(
+    // ── Quitter ───────────────────────────────────────────────────────────
+
+    @DeleteMapping("/{id}/leave")
+    public ResponseEntity<ApiResponse<Void>> leave(
+            @PathVariable Long id, Authentication auth) {
+        User user = userService.loadUserByEmail(auth.getName());
+        groupService.leaveGroup(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Vous avez quitté le groupe", null));
+    }
+
+    // ── Membres ───────────────────────────────────────────────────────────
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<ApiResponse<Page<GroupMemberResponse>>> getMembers(
             @PathVariable Long id,
+            @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            Authentication authentication) {
-
-        User user = userService.loadUserByEmail(authentication.getName());
-        Page<FeedItemResponse> feed = groupService.getGroupFeed(id, user, PageRequest.of(page, size));
-        return ResponseEntity.ok(ApiResponse.ok(feed));
+            @RequestParam(defaultValue = "20") int size) {
+        Page<GroupMemberResponse> members = groupService.getMembers(id, search, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.ok(members));
     }
 
-    // ── Inner record ──────────────────────────────────────────────────────
+    @PutMapping("/{id}/members/{userId}/role")
+    public ResponseEntity<ApiResponse<Void>> changeRole(
+            @PathVariable Long id,
+            @PathVariable Long userId,
+            @RequestBody RoleBody body,
+            Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        groupService.changeMemberRole(id, userId, body.role(), requester);
+        return ResponseEntity.ok(ApiResponse.ok("Rôle mis à jour", null));
+    }
 
-    /** { name, description?, type } — correspond à GroupRequest frontend */
-    record GroupRequest(String name, String description, String type) {}
+    @DeleteMapping("/{id}/members/{userId}")
+    public ResponseEntity<ApiResponse<Void>> kickMember(
+            @PathVariable Long id,
+            @PathVariable Long userId,
+            Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        groupService.kickMember(id, userId, requester);
+        return ResponseEntity.ok(ApiResponse.ok("Membre exclu", null));
+    }
+
+    // ── Demandes d'adhésion ───────────────────────────────────────────────
+
+    @GetMapping("/{id}/requests")
+    public ResponseEntity<ApiResponse<List<JoinRequestResponse>>> getRequests(
+            @PathVariable Long id, Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(groupService.getJoinRequests(id, requester)));
+    }
+
+    @PostMapping("/{id}/requests/{userId}/accept")
+    public ResponseEntity<ApiResponse<Void>> acceptRequest(
+            @PathVariable Long id,
+            @PathVariable Long userId,
+            Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        groupService.acceptRequest(id, userId, requester);
+        return ResponseEntity.ok(ApiResponse.ok("Demande acceptée", null));
+    }
+
+    @PostMapping("/{id}/requests/{userId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectRequest(
+            @PathVariable Long id,
+            @PathVariable Long userId,
+            Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        groupService.rejectRequest(id, userId, requester);
+        return ResponseEntity.ok(ApiResponse.ok("Demande refusée", null));
+    }
+
+    // ── Signalements ──────────────────────────────────────────────────────
+
+    @GetMapping("/{id}/reports")
+    public ResponseEntity<ApiResponse<List<ReportResponse>>> getReports(
+            @PathVariable Long id, Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        return ResponseEntity.ok(ApiResponse.ok(groupService.getReports(id, requester)));
+    }
+
+    @DeleteMapping("/{id}/reports/{reportId}")
+    public ResponseEntity<ApiResponse<Void>> deleteReport(
+            @PathVariable Long id,
+            @PathVariable Long reportId,
+            Authentication auth) {
+        User requester = userService.loadUserByEmail(auth.getName());
+        groupService.deleteReport(id, reportId, requester);
+        return ResponseEntity.ok(ApiResponse.ok("Signalement supprimé", null));
+    }
+
+    // ── Inner records ─────────────────────────────────────────────────────
+
+    record JoinBody(String message) {}
+    record RoleBody(String role) {}
 }
