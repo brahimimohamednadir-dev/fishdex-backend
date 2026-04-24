@@ -38,7 +38,8 @@
       "Bash(sed -n '200,230p')",
       "Read(//c/Users/33767/Projects/fishdex-frontend/src/app/features/profile/profile/**)",
       "Bash(Report)",
-      "Bash(Notif\")"
+      "Bash(Notif\")",
+      "Bash(bash /tmp/audit_check.sh)"
     ]
   }
 }
