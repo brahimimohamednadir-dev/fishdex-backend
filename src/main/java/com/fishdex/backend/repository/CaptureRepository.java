@@ -64,4 +64,37 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
            "FROM Capture c WHERE c.user.id = :userId " +
            "GROUP BY YEAR(c.caughtAt), MONTH(c.caughtAt) ORDER BY cnt DESC")
     List<Object[]> findCapturesByMonthForUser(@Param("userId") Long userId, Pageable pageable);
+
+    // ── Par espèce (FK) — pour la fiche espèce ───────────────────────────
+
+    boolean existsByUserIdAndSpeciesId(Long userId, Long speciesId);
+
+    long countBySpeciesId(Long speciesId);
+
+    long countByUserIdAndSpeciesId(Long userId, Long speciesId);
+
+    @Query("SELECT AVG(c.weight) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId")
+    Double findAvgWeightByUserIdAndSpeciesId(@Param("userId") Long userId,
+                                             @Param("speciesId") Long speciesId);
+
+    @Query("SELECT MAX(c.caughtAt) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId")
+    LocalDateTime findLastCatchByUserIdAndSpeciesId(@Param("userId") Long userId,
+                                                    @Param("speciesId") Long speciesId);
+
+    @Query("SELECT COUNT(c) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId " +
+           "AND YEAR(c.caughtAt) = :year")
+    long countByUserIdAndSpeciesIdAndYear(@Param("userId") Long userId,
+                                          @Param("speciesId") Long speciesId,
+                                          @Param("year") int year);
+
+    /** Record personnel : capture la plus lourde pour cet utilisateur + espèce */
+    @Query("SELECT c FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId " +
+           "AND c.weight = (SELECT MAX(c2.weight) FROM Capture c2 WHERE c2.user.id = :userId AND c2.species.id = :speciesId)")
+    Optional<Capture> findPersonalRecordByUserIdAndSpeciesId(@Param("userId") Long userId,
+                                                              @Param("speciesId") Long speciesId);
+
+    /** Record FishDex : capture la plus lourde toutes espèces confondues */
+    @Query("SELECT c FROM Capture c WHERE c.species.id = :speciesId " +
+           "AND c.weight = (SELECT MAX(c2.weight) FROM Capture c2 WHERE c2.species.id = :speciesId)")
+    Optional<Capture> findFishDexRecordBySpeciesId(@Param("speciesId") Long speciesId);
 }
