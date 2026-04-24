@@ -6,6 +6,10 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Correspond à l'interface FeedItem du frontend Angular :
+ * { captureId, userId, username, speciesName, weight, length, photoUrl, caughtAt, createdAt }
+ */
 @Data
 @Builder
 public class FeedItemResponse {
@@ -20,17 +24,17 @@ public class FeedItemResponse {
     private LocalDateTime caughtAt;
     private LocalDateTime createdAt;
 
-    public static FeedItemResponse from(Capture c) {
+    public static FeedItemResponse from(Capture capture) {
         return FeedItemResponse.builder()
-                .captureId(c.getId())
-                .userId(c.getUser().getId())
-                .username(c.getUser().getUsername())
-                .speciesName(c.getSpeciesName())
-                .weight(c.getWeight())
-                .length(c.getLength())
-                .photoUrl(c.getPhotoUrl())
-                .caughtAt(c.getCaughtAt())
-                .createdAt(c.getCreatedAt())
+                .captureId(capture.getId())
+                .userId(capture.getUser().getId())
+                .username(capture.getUser().getUsername())
+                .speciesName(capture.getSpeciesName())
+                .weight(capture.getWeight())
+                .length(capture.getLength())
+                .photoUrl(capture.getPhotoUrl())
+                .caughtAt(capture.getCaughtAt())
+                .createdAt(capture.getCreatedAt())
                 .build();
     }
 }

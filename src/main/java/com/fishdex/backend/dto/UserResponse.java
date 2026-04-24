@@ -15,6 +15,8 @@ public class UserResponse {
     private String username;
     private Boolean isPremium;
     private Integer captureCount;
+    private Boolean emailVerified;
+    private Boolean twoFactorEnabled;
     private LocalDateTime createdAt;
 
     public static UserResponse from(User user) {
@@ -24,6 +26,8 @@ public class UserResponse {
                 .username(user.getUsername())
                 .isPremium(user.getIsPremium())
                 .captureCount(user.getCaptureCount())
+                .emailVerified(user.getEmailVerified())
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

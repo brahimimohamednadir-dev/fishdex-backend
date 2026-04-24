@@ -1,11 +1,13 @@
 package com.fishdex.backend.dto;
 
-import com.fishdex.backend.entity.Group.GroupType;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * Used only by the legacy GroupController (Sprint-1 endpoint).
+ * The new multipart create endpoint uses @RequestParam directly.
+ */
 @Data
 public class GroupRequest {
 
@@ -16,6 +18,6 @@ public class GroupRequest {
     @Size(max = 500)
     private String description;
 
-    @NotNull
-    private GroupType type;
+    private String visibility = "PUBLIC";
+    private String category   = "FRIENDS";
 }

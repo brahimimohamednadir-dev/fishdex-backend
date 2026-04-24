@@ -4,9 +4,7 @@ import com.fishdex.backend.dto.CaptureRequest;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.dto.UserStatsResponse;
-import com.fishdex.backend.repository.BadgeRepository;
-import com.fishdex.backend.repository.CaptureRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,52 +23,39 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class StatsServiceTest {
+class StatsServiceTest extends com.fishdex.backend.BaseIntegrationTest {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private CaptureRepository captureRepository;
-
-    @Autowired
-    private BadgeRepository badgeRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private UserService userService;
+    @Autowired private CaptureRepository captureRepository;
+    @Autowired private BadgeRepository badgeRepository;
+    @Autowired private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private PreAuthTokenRepository preAuthTokenRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private NotificationRepository notificationRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() throws Exception {
-        captureRepository.deleteAll();
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
-
+        cleanAll();
         RegisterRequest register = new RegisterRequest();
         register.setEmail("stats@fishdex.fr");
         register.setUsername("statsuser");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
     }
 
     @AfterEach
-    void tearDown() {
-        captureRepository.deleteAll();
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
-    }
+    void tearDown() { cleanAll(); }
 
     private String getToken() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setEmail("stats@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))
@@ -81,11 +66,11 @@ class StatsServiceTest {
 
     @Test
     void statsWithNoCaptures_returnsZeros() {
-        UserStatsResponse stats = userService.getStats("stats@fishdex.fr");
+        UserStatsResponse stats = userService.getMyStats("stats@fishdex.fr");
 
         assertThat(stats.getTotalCaptures()).isEqualTo(0);
         assertThat(stats.getBiggestCatch()).isNull();
-        assertThat(stats.getTotalWeight()).isNull();
+        assertThat(stats.getTotalWeight()).isEqualTo(0.0);
         assertThat(stats.getCapturesBySpecies()).isEmpty();
         assertThat(stats.getMostActiveMonth()).isNull();
         assertThat(stats.getJoinedGroupsCount()).isEqualTo(0);
@@ -111,13 +96,12 @@ class StatsServiceTest {
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req1)));
-
         mockMvc.perform(post("/api/captures")
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req2)));
 
-        UserStatsResponse stats = userService.getStats("stats@fishdex.fr");
+        UserStatsResponse stats = userService.getMyStats("stats@fishdex.fr");
 
         assertThat(stats.getTotalCaptures()).isEqualTo(2);
         assertThat(stats.getTotalWeight()).isEqualTo(11.5);

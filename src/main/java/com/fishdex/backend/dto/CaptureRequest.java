@@ -8,9 +8,18 @@ import java.time.LocalDateTime;
 @Data
 public class CaptureRequest {
 
-    @NotBlank(message = "Le nom de l'espèce est obligatoire")
+    /**
+     * Nom libre de l'espèce (obligatoire).
+     * Si speciesId est fourni, ce champ est auto-rempli depuis le catalogue si laissé vide.
+     */
     @Size(max = 100, message = "Le nom de l'espèce ne doit pas dépasser 100 caractères")
     private String speciesName;
+
+    /**
+     * Lien optionnel vers le catalogue des espèces.
+     * Si fourni et speciesName est vide, speciesName est déduit du catalogue.
+     */
+    private Long speciesId;
 
     @NotNull(message = "Le poids est obligatoire")
     @DecimalMin(value = "0.01", message = "Le poids doit être supérieur à 0")
@@ -36,7 +45,6 @@ public class CaptureRequest {
     private String note;
 
     @NotNull(message = "La date de capture est obligatoire")
+    @PastOrPresent(message = "La date de capture ne peut pas être dans le futur")
     private LocalDateTime caughtAt;
-
-    private Long speciesId; // nullable — lien optionnel vers Species
 }

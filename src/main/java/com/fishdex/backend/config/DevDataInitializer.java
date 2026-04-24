@@ -2,7 +2,7 @@ package com.fishdex.backend.config;
 
 import com.fishdex.backend.entity.*;
 import com.fishdex.backend.entity.Badge.BadgeType;
-import com.fishdex.backend.entity.Group.GroupType;
+import com.fishdex.backend.entity.Group.GroupCategory;
 import com.fishdex.backend.entity.GroupMember.MemberRole;
 import com.fishdex.backend.repository.*;
 import com.fishdex.backend.service.BadgeService;
@@ -131,24 +131,24 @@ public class DevDataInitializer implements ApplicationRunner {
         Group carpistes = groupRepository.save(Group.builder()
                 .name("Carpistes Île-de-France")
                 .description("Le groupe des passionnés de carpe en région parisienne. Sorties collectives, bons plans étangs et conseils montages.")
-                .type(GroupType.CLUB)
+                .category(GroupCategory.CLUB)
                 .creator(marc)
                 .build());
 
         Group rhone = groupRepository.save(Group.builder()
                 .name("Pêcheurs du Rhône")
                 .description("Association de pêche sur le bassin du Rhône. Truites, barbeaux, chevaines — la pêche en rivière dans toute sa splendeur.")
-                .type(GroupType.ASSOCIATION)
+                .category(GroupCategory.ASSOCIATION)
                 .creator(pierre)
                 .build());
 
         // ── MEMBRES ───────────────────────────────────────────────────
         // Carpistes IDF : Marc (admin), Sophie (member)
-        groupMemberRepository.save(GroupMember.builder().group(carpistes).user(marc).role(MemberRole.ADMIN).build());
+        groupMemberRepository.save(GroupMember.builder().group(carpistes).user(marc).role(MemberRole.OWNER).build());
         groupMemberRepository.save(GroupMember.builder().group(carpistes).user(sophie).role(MemberRole.MEMBER).build());
 
-        // Pêcheurs du Rhône : Pierre (admin), Marc (member)
-        groupMemberRepository.save(GroupMember.builder().group(rhone).user(pierre).role(MemberRole.ADMIN).build());
+        // Pêcheurs du Rhône : Pierre (owner), Marc (member)
+        groupMemberRepository.save(GroupMember.builder().group(rhone).user(pierre).role(MemberRole.OWNER).build());
         groupMemberRepository.save(GroupMember.builder().group(rhone).user(marc).role(MemberRole.MEMBER).build());
 
         // ── BADGES ───────────────────────────────────────────────────

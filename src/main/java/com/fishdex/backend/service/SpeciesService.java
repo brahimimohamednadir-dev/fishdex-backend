@@ -1,6 +1,7 @@
 package com.fishdex.backend.service;
 
 import com.fishdex.backend.dto.SpeciesResponse;
+import com.fishdex.backend.entity.Species;
 import com.fishdex.backend.exception.BusinessException;
 import com.fishdex.backend.repository.SpeciesRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,18 +18,19 @@ public class SpeciesService {
     private final SpeciesRepository speciesRepository;
 
     @Transactional(readOnly = true)
-    public Page<SpeciesResponse> getAll(String search, Pageable pageable) {
+    public Page<SpeciesResponse> getSpecies(String search, Pageable pageable) {
         if (search != null && !search.isBlank()) {
-            return speciesRepository.findByCommonNameContainingIgnoreCase(search.trim(), pageable)
+            return speciesRepository
+                    .findByCommonNameContainingIgnoreCase(search.trim(), pageable)
                     .map(SpeciesResponse::from);
         }
         return speciesRepository.findAll(pageable).map(SpeciesResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public SpeciesResponse getById(Long id) {
-        return speciesRepository.findById(id)
-                .map(SpeciesResponse::from)
+    public SpeciesResponse getSpeciesById(Long id) {
+        Species species = speciesRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Espèce introuvable", HttpStatus.NOT_FOUND));
+        return SpeciesResponse.from(species);
     }
 }

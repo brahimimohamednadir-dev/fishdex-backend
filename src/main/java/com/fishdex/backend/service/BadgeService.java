@@ -1,20 +1,14 @@
 package com.fishdex.backend.service;
 
-import com.fishdex.backend.dto.BadgeResponse;
 import com.fishdex.backend.entity.Badge;
-import com.fishdex.backend.entity.Badge.BadgeType;
-import com.fishdex.backend.entity.Capture;
 import com.fishdex.backend.entity.User;
-import com.fishdex.backend.exception.BusinessException;
 import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
-import com.fishdex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -22,44 +16,40 @@ public class BadgeService {
 
     private final BadgeRepository badgeRepository;
     private final CaptureRepository captureRepository;
-    private final UserRepository userRepository;
 
+    /**
+     * Vérifie et attribue les badges liés aux captures pour l'utilisateur donné.
+     */
     @Transactional
     public void checkAndAwardBadges(User user) {
-        long count = captureRepository.countByUserId(user.getId());
-        award(user, BadgeType.FIRST_CATCH, count >= 1);
-        award(user, BadgeType.TEN_CATCHES, count >= 10);
-        award(user, BadgeType.FIFTY_CATCHES, count >= 50);
+        long captureCount = captureRepository.countByUserId(user.getId());
 
-        long distinctSpecies = captureRepository.findByUserId(user.getId())
-                .stream()
-                .map(Capture::getSpeciesName)
-                .distinct()
-                .count();
-        award(user, BadgeType.SPECIES_COLLECTOR, distinctSpecies >= 5);
+        if (captureCount >= 1)  award(user, Badge.BadgeType.FIRST_CAPTURE);
+        if (captureCount >= 5)  award(user, Badge.BadgeType.CAPTURE_5);
+        if (captureCount >= 10) award(user, Badge.BadgeType.CAPTURE_10);
 
-        long photosCount = captureRepository.countByUserIdAndPhotoUrlIsNotNull(user.getId());
-        award(user, BadgeType.PHOTOGRAPHER, photosCount >= 3);
+        long distinctSpecies = captureRepository.countDistinctSpeciesByUserId(user.getId());
+        if (distinctSpecies >= 3) award(user, Badge.BadgeType.SPECIES_3);
+        if (distinctSpecies >= 5) award(user, Badge.BadgeType.SPECIES_5);
     }
 
+    /**
+     * Attribue le badge "premier groupe" (à appeler lors de l'adhésion à un groupe).
+     */
     @Transactional
     public void awardFirstGroup(User user) {
-        award(user, BadgeType.FIRST_GROUP, true);
+        award(user, Badge.BadgeType.FIRST_GROUP);
     }
 
-    @Transactional(readOnly = true)
-    public List<BadgeResponse> getMyBadges(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException("Utilisateur non trouvé", HttpStatus.NOT_FOUND));
-        return badgeRepository.findByUserIdOrderByEarnedAtDesc(user.getId())
-                .stream()
-                .map(BadgeResponse::from)
-                .toList();
-    }
+    // ── Helpers ──────────────────────────────────────────────────────────
 
-    private void award(User user, BadgeType type, boolean condition) {
-        if (condition && !badgeRepository.existsByUserIdAndType(user.getId(), type)) {
-            badgeRepository.save(Badge.builder().user(user).type(type).build());
+    private void award(User user, Badge.BadgeType type) {
+        if (!badgeRepository.existsByUserIdAndType(user.getId(), type)) {
+            badgeRepository.save(Badge.builder()
+                    .user(user)
+                    .type(type)
+                    .awardedAt(LocalDateTime.now())
+                    .build());
         }
     }
 }

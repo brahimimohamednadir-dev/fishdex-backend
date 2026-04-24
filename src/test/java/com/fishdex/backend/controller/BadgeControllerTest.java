@@ -6,7 +6,7 @@ import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class BadgeControllerTest {
+class BadgeControllerTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,21 +45,19 @@ class BadgeControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("badgeuser@fishdex.fr");
         register.setUsername("badgeuser");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
 
         LoginRequest login = new LoginRequest();
         login.setEmail("badgeuser@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))
@@ -70,9 +68,7 @@ class BadgeControllerTest {
 
     @AfterEach
     void tearDown() {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
     }
 
     private CaptureRequest buildCapture(String speciesName) {
@@ -108,7 +104,7 @@ class BadgeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[?(@.type == 'FIRST_CATCH')]").exists())
-                .andExpect(jsonPath("$.data[?(@.label == 'Première capture')]").exists());
+                .andExpect(jsonPath("$.data[?(@.type == 'FIRST_CAPTURE')]").exists())
+                .andExpect(jsonPath("$.data[?(@.label == 'Première prise')]").exists());
     }
 }

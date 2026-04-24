@@ -4,21 +4,64 @@ import com.fishdex.backend.entity.Capture;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface CaptureRepository extends JpaRepository<Capture, Long> {
-
-    List<Capture> findByUserId(Long userId);
+public interface CaptureRepository extends JpaRepository<Capture, Long>,
+        JpaSpecificationExecutor<Capture> {
 
     Page<Capture> findByUserIdOrderByCaughtAtDesc(Long userId, Pageable pageable);
 
-    Page<Capture> findByUserIdInOrderByCaughtAtDesc(List<Long> userIds, Pageable pageable);
-
     long countByUserId(Long userId);
 
-    long countByUserIdAndPhotoUrlIsNotNull(Long userId);
+    // ── Statistiques ─────────────────────────────────────────────────────
 
-    Optional<Capture> findTopByUserIdOrderByWeightDesc(Long userId);
+    @Query("SELECT MAX(c.weight) FROM Capture c WHERE c.user.id = :userId")
+    Double findMaxWeightByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT SUM(c.weight) FROM Capture c WHERE c.user.id = :userId")
+    Double findTotalWeightByUserId(@Param("userId") Long userId);
+
+    /** La capture avec le poids maximal */
+    @Query("SELECT c FROM Capture c WHERE c.user.id = :userId AND c.weight = " +
+           "(SELECT MAX(c2.weight) FROM Capture c2 WHERE c2.user.id = :userId)")
+    Optional<Capture> findHeaviestByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT MAX(c.length) FROM Capture c WHERE c.user.id = :userId")
+    Double findMaxLengthByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT MIN(c.caughtAt) FROM Capture c WHERE c.user.id = :userId")
+    LocalDateTime findFirstCaptureDateByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT MAX(c.caughtAt) FROM Capture c WHERE c.user.id = :userId")
+    LocalDateTime findLastCaptureDateByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(c) FROM Capture c WHERE c.user.id = :userId AND c.caughtAt >= :since")
+    long countByUserIdAndCaughtAtAfter(@Param("userId") Long userId,
+                                       @Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(DISTINCT c.speciesName) FROM Capture c WHERE c.user.id = :userId")
+    long countDistinctSpeciesByUserId(@Param("userId") Long userId);
+
+    /** Retourne { speciesName, count } triés par count DESC */
+    @Query("SELECT c.speciesName, COUNT(c) as cnt FROM Capture c " +
+           "WHERE c.user.id = :userId " +
+           "GROUP BY c.speciesName ORDER BY cnt DESC")
+    List<Object[]> findMostCaughtSpeciesByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    /** Retourne { speciesName, count } — toutes les espèces pour la map */
+    @Query("SELECT c.speciesName, COUNT(c) as cnt FROM Capture c " +
+           "WHERE c.user.id = :userId GROUP BY c.speciesName")
+    List<Object[]> findCapturesBySpeciesNameForUser(@Param("userId") Long userId);
+
+    /** Retourne year + month séparément pour compatibilité H2/MySQL */
+    @Query("SELECT YEAR(c.caughtAt), MONTH(c.caughtAt), COUNT(c) as cnt " +
+           "FROM Capture c WHERE c.user.id = :userId " +
+           "GROUP BY YEAR(c.caughtAt), MONTH(c.caughtAt) ORDER BY cnt DESC")
+    List<Object[]> findCapturesByMonthForUser(@Param("userId") Long userId, Pageable pageable);
 }

@@ -18,6 +18,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GroupMember {
 
+    public enum MemberRole {
+        OWNER, ADMIN, MODERATOR, MEMBER
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,8 +42,4 @@ public class GroupMember {
     @CreationTimestamp
     @Column(name = "joined_at", nullable = false, updatable = false)
     private LocalDateTime joinedAt;
-
-    public enum MemberRole {
-        ADMIN, MEMBER
-    }
 }

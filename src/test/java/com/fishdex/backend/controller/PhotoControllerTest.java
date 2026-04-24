@@ -6,7 +6,7 @@ import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.exception.BusinessException;
 import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import com.fishdex.backend.service.CloudinaryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class PhotoControllerTest {
+class PhotoControllerTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -53,21 +53,19 @@ class PhotoControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("photoman@fishdex.fr");
         register.setUsername("photoman");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
 
         LoginRequest login = new LoginRequest();
         login.setEmail("photoman@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))
@@ -95,9 +93,7 @@ class PhotoControllerTest {
 
     @AfterEach
     void tearDown() {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
     }
 
     @Test

@@ -6,9 +6,8 @@ import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.entity.Badge.BadgeType;
 import com.fishdex.backend.entity.User;
-import com.fishdex.backend.repository.BadgeRepository;
-import com.fishdex.backend.repository.CaptureRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,19 +27,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class BadgeServiceTest {
+class BadgeServiceTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private BadgeService badgeService;
 
     @Autowired
-    private BadgeRepository badgeRepository;
+    private UserService userService;
 
-    @Autowired
-    private CaptureRepository captureRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private BadgeRepository badgeRepository;
+    @Autowired private CaptureRepository captureRepository;
+    @Autowired private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private PreAuthTokenRepository preAuthTokenRepository;
+    @Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired private NotificationRepository notificationRepository;
+    @Autowired private UserRepository userRepository;
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,14 +54,12 @@ class BadgeServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        captureRepository.deleteAll();
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("badgetest@fishdex.fr");
         register.setUsername("badgetestuser");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
@@ -68,11 +68,7 @@ class BadgeServiceTest {
     }
 
     @AfterEach
-    void tearDown() {
-        captureRepository.deleteAll();
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
-    }
+    void tearDown() { cleanAll(); }
 
     private void createCapture(String token, String speciesName) throws Exception {
         CaptureRequest req = new CaptureRequest();
@@ -90,7 +86,7 @@ class BadgeServiceTest {
     private String getToken() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setEmail("badgetest@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))
@@ -105,10 +101,10 @@ class BadgeServiceTest {
         createCapture(token, "Brochet");
 
         testUser = userRepository.findByEmail("badgetest@fishdex.fr").orElseThrow();
-        List<BadgeResponse> badges = badgeService.getMyBadges("badgetest@fishdex.fr");
+        List<BadgeResponse> badges = userService.getMyBadges("badgetest@fishdex.fr");
 
         assertThat(badges).extracting(BadgeResponse::getType)
-                .contains(BadgeType.FIRST_CATCH.name());
+                .contains(BadgeType.FIRST_CAPTURE.name());
     }
 
     @Test
@@ -118,10 +114,10 @@ class BadgeServiceTest {
             createCapture(token, "Brochet");
         }
 
-        List<BadgeResponse> badges = badgeService.getMyBadges("badgetest@fishdex.fr");
+        List<BadgeResponse> badges = userService.getMyBadges("badgetest@fishdex.fr");
 
         assertThat(badges).extracting(BadgeResponse::getType)
-                .contains(BadgeType.FIRST_CATCH.name(), BadgeType.TEN_CATCHES.name());
+                .contains(BadgeType.FIRST_CAPTURE.name(), BadgeType.CAPTURE_10.name());
     }
 
     @Test
@@ -130,9 +126,9 @@ class BadgeServiceTest {
         createCapture(token, "Brochet");
         createCapture(token, "Carpe");
 
-        long firstCatchCount = badgeRepository.findByUserIdOrderByEarnedAtDesc(testUser.getId())
+        long firstCatchCount = badgeRepository.findByUserId(testUser.getId())
                 .stream()
-                .filter(b -> b.getType() == BadgeType.FIRST_CATCH)
+                .filter(b -> b.getType() == BadgeType.FIRST_CAPTURE)
                 .count();
 
         assertThat(firstCatchCount).isEqualTo(1);
@@ -147,9 +143,9 @@ class BadgeServiceTest {
         createCapture(token, "Perche");
         createCapture(token, "Truite");
 
-        List<BadgeResponse> badges = badgeService.getMyBadges("badgetest@fishdex.fr");
+        List<BadgeResponse> badges = userService.getMyBadges("badgetest@fishdex.fr");
 
         assertThat(badges).extracting(BadgeResponse::getType)
-                .contains(BadgeType.SPECIES_COLLECTOR.name());
+                .contains(BadgeType.SPECIES_5.name());
     }
 }

@@ -38,7 +38,44 @@ public class User {
     @Builder.Default
     private Integer captureCount = 0;
 
+    // ── Email verification ────────────────────────────────────────────────
+
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
+    // ── Account lockout (brute-force protection) ──────────────────────────
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    @Builder.Default
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    // ── Google OAuth ──────────────────────────────────────────────────────
+
+    @Column(name = "google_id", length = 100, unique = true)
+    private String googleId;
+
+    // ── 2FA ───────────────────────────────────────────────────────────────
+
+    @Column(name = "two_factor_enabled", nullable = false)
+    @Builder.Default
+    private Boolean twoFactorEnabled = false;
+
+    // ── Timestamps ────────────────────────────────────────────────────────
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // ── Helper methods ────────────────────────────────────────────────────
+
+    public boolean isLocked() {
+        return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
+    }
 }

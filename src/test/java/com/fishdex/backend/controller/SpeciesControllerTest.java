@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.repository.BadgeRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class SpeciesControllerTest {
+class SpeciesControllerTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -38,20 +38,19 @@ class SpeciesControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("pecheur@fishdex.fr");
         register.setUsername("pecheur1");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register)));
 
         LoginRequest login = new LoginRequest();
         login.setEmail("pecheur@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login)))

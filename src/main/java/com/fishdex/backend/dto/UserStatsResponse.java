@@ -5,14 +5,29 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Réponse pour GET /api/users/me/stats
+ * Correspond exactement à l'interface UserStats du frontend Angular.
+ */
 @Data
 @Builder
 public class UserStatsResponse {
 
-    private int totalCaptures;
+    /** Nombre total de captures */
+    private long totalCaptures;
+
+    /** Poids total de toutes les captures en kg */
+    private double totalWeight;
+
+    /** La plus grosse capture (null si aucune capture) */
     private CaptureResponse biggestCatch;
-    private Double totalWeight;
+
+    /** Captures par nom d'espèce : { "Brochet": 3, "Carpe": 5, ... } */
     private Map<String, Long> capturesBySpecies;
-    private String mostActiveMonth; // format "2026-04"
-    private int joinedGroupsCount;
+
+    /** Mois le plus actif au format "2024-06" (null si aucune capture) */
+    private String mostActiveMonth;
+
+    /** Nombre de groupes rejoints */
+    private long joinedGroupsCount;
 }

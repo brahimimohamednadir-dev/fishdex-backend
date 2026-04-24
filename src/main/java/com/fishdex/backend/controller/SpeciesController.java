@@ -17,18 +17,27 @@ public class SpeciesController {
 
     private final SpeciesService speciesService;
 
+    /**
+     * GET /api/species?search=brochet&page=0&size=20
+     * Route publique — accessible sans JWT.
+     */
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<SpeciesResponse>>> getAll(
+    public ResponseEntity<ApiResponse<Page<SpeciesResponse>>> getSpecies(
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(ApiResponse.ok(speciesService.getAll(search, pageable)));
+        Page<SpeciesResponse> result = speciesService.getSpecies(search, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
+    /**
+     * GET /api/species/{id}
+     * Route publique — fiche détaillée d'une espèce.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SpeciesResponse>> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.ok(speciesService.getById(id)));
+    public ResponseEntity<ApiResponse<SpeciesResponse>> getSpeciesById(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(speciesService.getSpeciesById(id)));
     }
 }

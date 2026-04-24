@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.repository.BadgeRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class AuthControllerTest {
+class AuthControllerTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -34,8 +34,12 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        badgeRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        cleanAll();
     }
 
     @Test
@@ -43,7 +47,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@fishdex.fr");
         request.setUsername("pescateur1");
-        request.setPassword("motdepasse123");
+        request.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -62,7 +66,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("doublon@fishdex.fr");
         request.setUsername("user1");
-        request.setPassword("motdepasse123");
+        request.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +86,7 @@ class AuthControllerTest {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("pas-un-email");
         request.setUsername("user1");
-        request.setPassword("motdepasse123");
+        request.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +113,7 @@ class AuthControllerTest {
         RegisterRequest register = new RegisterRequest();
         register.setEmail("login@fishdex.fr");
         register.setUsername("loginuser");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -117,7 +121,7 @@ class AuthControllerTest {
 
         LoginRequest login = new LoginRequest();
         login.setEmail("login@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -134,7 +138,7 @@ class AuthControllerTest {
         RegisterRequest register = new RegisterRequest();
         register.setEmail("wrongpwd@fishdex.fr");
         register.setUsername("wrongpwduser");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -155,7 +159,7 @@ class AuthControllerTest {
     void login_unknownEmail_returns401() throws Exception {
         LoginRequest login = new LoginRequest();
         login.setEmail("inconnu@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

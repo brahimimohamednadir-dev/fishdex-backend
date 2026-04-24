@@ -8,6 +8,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SpeciesRepository extends JpaRepository<Species, Long> {
 
     Page<Species> findByCommonNameContainingIgnoreCase(String commonName, Pageable pageable);
-
-    boolean existsByCommonName(String commonName);
 }

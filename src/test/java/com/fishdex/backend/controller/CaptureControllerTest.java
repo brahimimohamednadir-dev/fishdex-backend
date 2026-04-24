@@ -10,7 +10,7 @@ import com.fishdex.backend.entity.User;
 import com.fishdex.backend.repository.BadgeRepository;
 import com.fishdex.backend.repository.CaptureRepository;
 import com.fishdex.backend.repository.SpeciesRepository;
-import com.fishdex.backend.repository.UserRepository;
+import com.fishdex.backend.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class CaptureControllerTest {
+class CaptureControllerTest extends com.fishdex.backend.BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -55,14 +55,12 @@ class CaptureControllerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("pecheur@fishdex.fr");
         register.setUsername("pecheur1");
-        register.setPassword("motdepasse123");
+        register.setPassword("Motdepasse1!");
 
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -70,7 +68,7 @@ class CaptureControllerTest {
 
         LoginRequest login = new LoginRequest();
         login.setEmail("pecheur@fishdex.fr");
-        login.setPassword("motdepasse123");
+        login.setPassword("Motdepasse1!");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,9 +82,7 @@ class CaptureControllerTest {
 
     @AfterEach
     void tearDown() {
-        badgeRepository.deleteAll();
-        captureRepository.deleteAll();
-        userRepository.deleteAll();
+        cleanAll();
     }
 
     private CaptureRequest buildCaptureRequest(String speciesName) {
@@ -247,14 +243,14 @@ class CaptureControllerTest {
         RegisterRequest register2 = new RegisterRequest();
         register2.setEmail("autre@fishdex.fr");
         register2.setUsername("autreuser");
-        register2.setPassword("motdepasse123");
+        register2.setPassword("Motdepasse1!");
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(register2)));
 
         LoginRequest login2 = new LoginRequest();
         login2.setEmail("autre@fishdex.fr");
-        login2.setPassword("motdepasse123");
+        login2.setPassword("Motdepasse1!");
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(login2)))

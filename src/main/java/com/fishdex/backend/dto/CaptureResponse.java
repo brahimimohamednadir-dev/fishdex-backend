@@ -6,6 +6,11 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * Correspond exactement à l'interface Capture du frontend Angular :
+ * { id, userId, username, speciesName, weight, length, photoUrl,
+ *   latitude, longitude, note, caughtAt, createdAt, species }
+ */
 @Data
 @Builder
 public class CaptureResponse {
@@ -13,8 +18,10 @@ public class CaptureResponse {
     private Long id;
     private Long userId;
     private String username;
+
+    /** Nom libre saisi par l'utilisateur */
     private String speciesName;
-    private SpeciesResponse species;
+
     private Double weight;
     private Double length;
     private String photoUrl;
@@ -24,13 +31,18 @@ public class CaptureResponse {
     private LocalDateTime caughtAt;
     private LocalDateTime createdAt;
 
+    /**
+     * Espèce liée au catalogue (null si non répertoriée).
+     * Correspond au champ "species: Species | null" du frontend.
+     */
+    private SpeciesResponse species;
+
     public static CaptureResponse from(Capture capture) {
         return CaptureResponse.builder()
                 .id(capture.getId())
                 .userId(capture.getUser().getId())
                 .username(capture.getUser().getUsername())
                 .speciesName(capture.getSpeciesName())
-                .species(capture.getSpecies() != null ? SpeciesResponse.from(capture.getSpecies()) : null)
                 .weight(capture.getWeight())
                 .length(capture.getLength())
                 .photoUrl(capture.getPhotoUrl())
@@ -39,6 +51,9 @@ public class CaptureResponse {
                 .note(capture.getNote())
                 .caughtAt(capture.getCaughtAt())
                 .createdAt(capture.getCreatedAt())
+                .species(capture.getSpecies() != null
+                        ? SpeciesResponse.from(capture.getSpecies())
+                        : null)
                 .build();
     }
 }

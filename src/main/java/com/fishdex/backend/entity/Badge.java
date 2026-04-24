@@ -17,23 +17,28 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Badge {
 
+    public enum BadgeType {
+        FIRST_CAPTURE,
+        CAPTURE_5,
+        CAPTURE_10,
+        SPECIES_3,
+        SPECIES_5,
+        FIRST_GROUP
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 50)
     private BadgeType type;
 
     @CreationTimestamp
-    @Column(name = "earned_at", updatable = false)
-    private LocalDateTime earnedAt;
-
-    public enum BadgeType {
-        FIRST_CATCH, TEN_CATCHES, FIFTY_CATCHES, FIRST_GROUP, SPECIES_COLLECTOR, PHOTOGRAPHER
-    }
+    @Column(name = "awarded_at", nullable = false, updatable = false)
+    private LocalDateTime awardedAt;
 }
