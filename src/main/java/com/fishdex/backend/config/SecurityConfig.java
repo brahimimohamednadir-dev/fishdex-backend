@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/species", "/api/species/**").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
+                        // Uploads locaux (mode dev sans Cloudinary)
+                        .requestMatchers("/uploads/**").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)
                         // Sessions — authentifié (géré par anyRequest)
                         // Tout le reste requiert une authentification

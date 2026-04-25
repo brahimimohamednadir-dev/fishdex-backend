@@ -161,6 +161,7 @@ public class CaptureService {
         } catch (BusinessException e) {
             throw e;
         } catch (IOException e) {
+            log.error("Erreur upload photo: {}", e.getMessage(), e);
             throw new BusinessException("Impossible d'uploader la photo", HttpStatus.SERVICE_UNAVAILABLE);
         }
         Capture saved = captureRepository.save(capture);
