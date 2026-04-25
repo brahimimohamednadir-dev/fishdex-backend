@@ -28,7 +28,7 @@ public class SpeciesService {
     public Page<SpeciesResponse> getSpecies(String search, Pageable pageable) {
         if (search != null && !search.isBlank()) {
             return speciesRepository
-                    .findByCommonNameContainingIgnoreCase(search.trim(), pageable)
+                    .searchByNameOrFamily(search.trim(), pageable)
                     .map(SpeciesResponse::from);
         }
         return speciesRepository.findAll(pageable).map(SpeciesResponse::from);
