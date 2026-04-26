@@ -169,7 +169,7 @@ public class UserService {
         if (viewerEmail != null) {
             User viewer = userRepository.findByEmail(viewerEmail).orElse(null);
             if (viewer != null && !viewer.getId().equals(targetId)) {
-                Optional<Friendship> fs = friendshipRepository.findBetween(viewer.getId(), targetId);
+                Optional<Friendship> fs = friendshipRepository.findBetween(viewer, target);
                 if (fs.isPresent()) {
                     Friendship f = fs.get();
                     friendshipId = f.getId();
