@@ -38,6 +38,14 @@ public class CaptureResponse {
     private SpeciesResponse species;
     private String visibility;
 
+    // ── Météo ─────────────────────────────────────────────────────────────
+    private Double  weatherTemp;
+    private Double  weatherWind;
+    private Double  weatherPressure;
+    private Integer weatherClouds;
+    private String  weatherDesc;
+    private String  weatherIcon;
+
     public static CaptureResponse from(Capture capture) {
         return CaptureResponse.builder()
                 .id(capture.getId())
@@ -56,6 +64,12 @@ public class CaptureResponse {
                         ? SpeciesResponse.from(capture.getSpecies())
                         : null)
                 .visibility(capture.getVisibility() != null ? capture.getVisibility().name() : "PUBLIC")
+                .weatherTemp(capture.getWeatherTemp())
+                .weatherWind(capture.getWeatherWind())
+                .weatherPressure(capture.getWeatherPressure())
+                .weatherClouds(capture.getWeatherClouds())
+                .weatherDesc(capture.getWeatherDesc())
+                .weatherIcon(capture.getWeatherIcon())
                 .build();
     }
 }

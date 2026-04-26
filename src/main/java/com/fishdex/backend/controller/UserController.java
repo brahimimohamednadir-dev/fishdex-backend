@@ -1,12 +1,7 @@
 package com.fishdex.backend.controller;
 
 import com.fishdex.backend.common.ApiResponse;
-import com.fishdex.backend.dto.BadgeResponse;
-import com.fishdex.backend.dto.CaptureStatsResponse;
-import com.fishdex.backend.dto.SessionResponse;
-import com.fishdex.backend.dto.UserStatsResponse;
-import com.fishdex.backend.dto.UpdateUsernameRequest;
-import com.fishdex.backend.dto.UserResponse;
+import com.fishdex.backend.dto.*;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.repository.UserRepository;
 import com.fishdex.backend.service.AuthService;
@@ -101,6 +96,25 @@ public class UserController {
 
         authService.logout(userDetails.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    /** GET /api/users/{username} — Profil public d'un utilisateur */
+    @GetMapping("/{username}")
+    public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
+            @PathVariable String username,
+            Authentication authentication) {
+
+        String viewerEmail = authentication != null ? authentication.getName() : null;
+        PublicProfileResponse profile = userService.getPublicProfile(username, viewerEmail);
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    /** GET /api/users/me/personal-stats — Stats annuelles enrichies */
+    @GetMapping("/me/personal-stats")
+    public ResponseEntity<ApiResponse<PersonalStatsResponse>> getPersonalStats(
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                userService.getPersonalStats(authentication.getName())));
     }
 
     /**

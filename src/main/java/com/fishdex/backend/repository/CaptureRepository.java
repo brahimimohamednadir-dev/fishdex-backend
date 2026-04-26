@@ -68,6 +68,37 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
 
     // ── Feed social ──────────────────────────────────────────────────────
 
+    // ── Profil public ────────────────────────────────────────────────────
+
+    /** Captures publiques d'un utilisateur (pour la grille profil) */
+    Page<Capture> findByUserIdAndVisibilityOrderByCreatedAtDesc(
+            Long userId, Capture.Visibility visibility, Pageable pageable);
+
+    /** Record le plus lourd par userId */
+    @Query("SELECT c FROM Capture c WHERE c.user.id = :userId ORDER BY c.weight DESC")
+    List<Capture> findTopByWeightForUser(@Param("userId") Long userId, Pageable pageable);
+
+    // ── Stats personnelles ────────────────────────────────────────────────
+
+    /** Captures par mois pour une année donnée : (month, count) */
+    @Query("SELECT MONTH(c.caughtAt), COUNT(c) FROM Capture c " +
+           "WHERE c.user.id = :userId AND YEAR(c.caughtAt) = :year " +
+           "GROUP BY MONTH(c.caughtAt)")
+    List<Object[]> findMonthlyCaptureCountsForYear(@Param("userId") Long userId,
+                                                    @Param("year") int year);
+
+    /** Records par espèce : (speciesName, count, maxWeight, maxLength) */
+    @Query("SELECT c.speciesName, COUNT(c), MAX(c.weight), MAX(c.length) FROM Capture c " +
+           "WHERE c.user.id = :userId " +
+           "GROUP BY c.speciesName ORDER BY COUNT(c) DESC")
+    List<Object[]> findSpeciesRecordsForUser(@Param("userId") Long userId, Pageable pageable);
+
+    /** Spots GPS groupés (lat/lng arrondis à 2 décimales) : (lat, lng, count) */
+    @Query("SELECT ROUND(c.latitude, 2), ROUND(c.longitude, 2), COUNT(c) FROM Capture c " +
+           "WHERE c.user.id = :userId AND c.latitude IS NOT NULL AND c.longitude IS NOT NULL " +
+           "GROUP BY ROUND(c.latitude, 2), ROUND(c.longitude, 2) ORDER BY COUNT(c) DESC")
+    List<Object[]> findFavoriteSpotsForUser(@Param("userId") Long userId, Pageable pageable);
+
     /** Dernière capture d'un utilisateur (pour l'aperçu ami) */
     Optional<Capture> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 

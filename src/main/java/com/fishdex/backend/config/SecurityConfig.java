@@ -64,6 +64,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/species", "/api/species/**").permitAll()
                         // Feed public (commentaires sans auth)
                         .requestMatchers(HttpMethod.GET, "/api/feed/captures/*/comments").permitAll()
+                        // Profil public — accessible sans auth (mais enrichi si connecté)
+                        .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)

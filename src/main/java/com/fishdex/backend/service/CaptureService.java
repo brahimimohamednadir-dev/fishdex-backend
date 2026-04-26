@@ -10,6 +10,7 @@ import com.fishdex.backend.repository.CaptureRepository;
 import com.fishdex.backend.repository.SpeciesRepository;
 import com.fishdex.backend.repository.UserRepository;
 import com.fishdex.backend.repository.spec.CaptureSpecification;
+import com.fishdex.backend.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,7 @@ public class CaptureService {
     private final CaptureRepository captureRepository;
     private final SpeciesRepository speciesRepository;
     private final UserRepository userRepository;
+    private final WeatherService weatherService;
 
     // ── Création ──────────────────────────────────────────────────────────
 
@@ -84,6 +86,19 @@ public class CaptureService {
                 .caughtAt(request.getCaughtAt())
                 .visibility(visibility)
                 .build();
+
+        // Enrichissement météo si GPS présent
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            weatherService.fetchWeather(request.getLatitude(), request.getLongitude())
+                    .ifPresent(w -> {
+                        capture.setWeatherTemp(w.temperatureC());
+                        capture.setWeatherWind(w.windSpeedMs());
+                        capture.setWeatherPressure(w.pressureHpa());
+                        capture.setWeatherClouds(w.cloudCoverage());
+                        capture.setWeatherDesc(w.description());
+                        capture.setWeatherIcon(w.icon());
+                    });
+        }
 
         Capture saved = captureRepository.save(capture);
 

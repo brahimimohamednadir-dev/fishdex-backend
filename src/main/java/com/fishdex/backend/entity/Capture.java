@@ -58,6 +58,25 @@ public class Capture {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // ── Météo (optionnel — rempli automatiquement si GPS présent) ────────
+    @Column(name = "weather_temp")
+    private Double weatherTemp;          // °C
+
+    @Column(name = "weather_wind")
+    private Double weatherWind;          // m/s
+
+    @Column(name = "weather_pressure")
+    private Double weatherPressure;      // hPa
+
+    @Column(name = "weather_clouds")
+    private Integer weatherClouds;       // % couverture nuageuse
+
+    @Column(name = "weather_desc", length = 100)
+    private String weatherDesc;          // ex: "légère pluie"
+
+    @Column(name = "weather_icon", length = 10)
+    private String weatherIcon;          // ex: "10d"
+
     /** Visibilité de la capture dans le feed social */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
