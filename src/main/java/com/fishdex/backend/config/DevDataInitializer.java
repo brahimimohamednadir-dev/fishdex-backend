@@ -169,7 +169,7 @@ public class DevDataInitializer implements ApplicationRunner {
 
     private Species findByName(String partialName) {
         return speciesRepository
-                .findByCommonNameContainingIgnoreCase(partialName, org.springframework.data.domain.Pageable.unpaged())
+                .searchByNameOrFamily(partialName, org.springframework.data.domain.Pageable.unpaged())
                 .getContent()
                 .get(0);
     }
