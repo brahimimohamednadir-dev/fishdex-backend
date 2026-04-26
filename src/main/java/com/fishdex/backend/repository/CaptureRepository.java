@@ -65,4 +65,31 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
            "FROM Capture c WHERE c.user.id = :userId " +
            "GROUP BY YEAR(c.caughtAt), MONTH(c.caughtAt) ORDER BY cnt DESC")
     List<Object[]> findCapturesByMonthForUser(@Param("userId") Long userId, Pageable pageable);
+
+    // ── Feed social ──────────────────────────────────────────────────────
+
+    /** Dernière capture d'un utilisateur (pour l'aperçu ami) */
+    Optional<Capture> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
+    /** Feed : captures des amis (visibility PUBLIC ou FRIENDS) + propres captures */
+    @Query("SELECT c FROM Capture c WHERE " +
+           "(c.user.id IN :friendIds AND c.visibility IN ('PUBLIC', 'FRIENDS')) " +
+           "OR (c.user.id = :myId) " +
+           "ORDER BY c.createdAt DESC")
+    Page<Capture> findFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                                   @Param("myId") Long myId,
+                                   Pageable pageable);
+
+    /** Feed public (pour les utilisateurs sans amis ou pour la découverte) */
+    @Query("SELECT c FROM Capture c WHERE c.visibility = 'PUBLIC' ORDER BY c.createdAt DESC")
+    Page<Capture> findPublicCaptures(Pageable pageable);
+
+    /** Nombre de nouvelles captures dans le feed depuis une date */
+    @Query("SELECT COUNT(c) FROM Capture c WHERE " +
+           "((c.user.id IN :friendIds AND c.visibility IN ('PUBLIC', 'FRIENDS')) " +
+           "OR c.user.id = :myId) " +
+           "AND c.createdAt > :since")
+    long countNewFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                              @Param("myId") Long myId,
+                              @Param("since") LocalDateTime since);
 }

@@ -47,4 +47,10 @@ public class CaptureRequest {
     @NotNull(message = "La date de capture est obligatoire")
     @PastOrPresent(message = "La date de capture ne peut pas être dans le futur")
     private LocalDateTime caughtAt;
+
+    /**
+     * Visibilité : PUBLIC (défaut), FRIENDS, PRIVATE
+     * Non obligatoire — défaut côté entité : PUBLIC
+     */
+    private String visibility;
 }

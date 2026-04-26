@@ -65,6 +65,13 @@ public class CaptureService {
         Species species = resolveSpecies(request);
         String speciesName = resolveSpeciesName(request, species);
 
+        com.fishdex.backend.entity.Capture.Visibility visibility =
+                com.fishdex.backend.entity.Capture.Visibility.PUBLIC;
+        if (request.getVisibility() != null) {
+            try { visibility = com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility()); }
+            catch (IllegalArgumentException ignored) {}
+        }
+
         Capture capture = Capture.builder()
                 .user(user)
                 .speciesName(speciesName)
@@ -75,6 +82,7 @@ public class CaptureService {
                 .longitude(request.getLongitude())
                 .note(request.getNote())
                 .caughtAt(request.getCaughtAt())
+                .visibility(visibility)
                 .build();
 
         Capture saved = captureRepository.save(capture);
@@ -137,6 +145,10 @@ public class CaptureService {
         capture.setLongitude(request.getLongitude());
         capture.setNote(request.getNote());
         capture.setCaughtAt(request.getCaughtAt());
+        if (request.getVisibility() != null) {
+            try { capture.setVisibility(com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility())); }
+            catch (IllegalArgumentException ignored) {}
+        }
 
         return CaptureResponse.from(captureRepository.save(capture));
     }

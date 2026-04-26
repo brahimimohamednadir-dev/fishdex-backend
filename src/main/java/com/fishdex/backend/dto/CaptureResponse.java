@@ -36,6 +36,7 @@ public class CaptureResponse {
      * Correspond au champ "species: Species | null" du frontend.
      */
     private SpeciesResponse species;
+    private String visibility;
 
     public static CaptureResponse from(Capture capture) {
         return CaptureResponse.builder()
@@ -54,6 +55,7 @@ public class CaptureResponse {
                 .species(capture.getSpecies() != null
                         ? SpeciesResponse.from(capture.getSpecies())
                         : null)
+                .visibility(capture.getVisibility() != null ? capture.getVisibility().name() : "PUBLIC")
                 .build();
     }
 }

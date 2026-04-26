@@ -76,6 +76,24 @@ public class NotificationService {
         notificationRepository.save(notif);
     }
 
+    /** Helper simplifié pour les notifications sociales (amis, likes, commentaires) */
+    @Transactional
+    public void createNotification(User recipient, String actorUsername,
+                                   String type, Long referenceId) {
+        if (recipient.getUsername().equals(actorUsername)) return;
+        Notification.NotificationType notifType;
+        try { notifType = Notification.NotificationType.valueOf(type); }
+        catch (IllegalArgumentException e) { return; }
+
+        Notification notif = Notification.builder()
+                .recipient(recipient)
+                .type(notifType)
+                .actorUsername(actorUsername)
+                .postId(referenceId)
+                .build();
+        notificationRepository.save(notif);
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────
 
     private User loadUser(String email) {

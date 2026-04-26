@@ -57,4 +57,19 @@ public class Capture {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** Visibilité de la capture dans le feed social */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Visibility visibility = Visibility.PUBLIC;
+
+    public enum Visibility {
+        /** Visible par tous (feed public) */
+        PUBLIC,
+        /** Visible uniquement par les amis */
+        FRIENDS,
+        /** Privé — visible uniquement par le propriétaire */
+        PRIVATE
+    }
 }

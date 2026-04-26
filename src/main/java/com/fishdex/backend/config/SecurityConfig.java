@@ -62,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/2fa/verify").permitAll()
                         // Catalogue espèces — public en lecture seule
                         .requestMatchers(HttpMethod.GET, "/api/species", "/api/species/**").permitAll()
+                        // Feed public (commentaires sans auth)
+                        .requestMatchers(HttpMethod.GET, "/api/feed/captures/*/comments").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)
