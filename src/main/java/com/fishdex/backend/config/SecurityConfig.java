@@ -68,6 +68,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
+                        // Admin temporaire
+                        .requestMatchers("/api/admin/**").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)
                         // Sessions — authentifié (géré par anyRequest)
                         // Tout le reste requiert une authentification
