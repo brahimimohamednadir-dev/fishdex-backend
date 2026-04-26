@@ -189,6 +189,7 @@ public class UserService {
         return PublicProfileResponse.builder()
                 .userId(targetId)
                 .username(target.getUsername())
+                .userTag(target.getUserTag())
                 .memberSince(target.getCreatedAt())
                 .totalCaptures(totalCaptures)
                 .distinctSpecies(distinctSpecies)

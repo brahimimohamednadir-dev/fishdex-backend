@@ -27,6 +27,13 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+    /**
+     * Tag unique à 5 chiffres — permet de trouver un ami précisément.
+     * Format affiché : username#12345
+     */
+    @Column(name = "user_tag", nullable = false, length = 5, unique = true)
+    private String userTag;
+
     @Column(nullable = false)
     private String password;
 

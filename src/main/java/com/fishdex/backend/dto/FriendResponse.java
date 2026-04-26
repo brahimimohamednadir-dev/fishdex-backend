@@ -14,6 +14,7 @@ public class FriendResponse {
 
     private Long userId;
     private String username;
+    private String userTag;
     private int captureCount;
 
     /** true si l'utilisateur a posté une capture dans les dernières 24h */
@@ -39,6 +40,7 @@ public class FriendResponse {
         return FriendResponse.builder()
                 .userId(other.getId())
                 .username(other.getUsername())
+                .userTag(other.getUserTag())
                 .captureCount(other.getCaptureCount())
                 .activeToday(activeToday)
                 .lastCaptureId(lastCapture != null ? lastCapture.getId() : null)
@@ -55,6 +57,7 @@ public class FriendResponse {
         return FriendResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
+                .userTag(user.getUserTag())
                 .captureCount(user.getCaptureCount())
                 .activeToday(false)
                 .friendshipStatus(status)

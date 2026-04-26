@@ -32,10 +32,33 @@ public class FriendService {
 
     @Transactional(readOnly = true)
     public List<FriendResponse> search(String query, User me) {
-        if (query == null || query.length() < 2) {
-            throw new BusinessException("La recherche doit contenir au moins 2 caractères", HttpStatus.BAD_REQUEST);
+        if (query == null || query.isBlank()) {
+            throw new BusinessException("La recherche ne peut pas être vide", HttpStatus.BAD_REQUEST);
         }
-        List<User> users = userRepository.findByUsernameContainingIgnoreCaseAndIdNot(query.trim(), me.getId());
+        String q = query.trim();
+
+        // ── Recherche par tag exact : "username#12345" ou "#12345" ──────────
+        List<User> users;
+        int hashIdx = q.lastIndexOf('#');
+        if (hashIdx >= 0) {
+            String tag = q.substring(hashIdx + 1).trim();
+            if (tag.matches("\\d{5}")) {
+                // Recherche exacte par tag
+                users = userRepository.findByUserTag(tag)
+                        .filter(u -> !u.getId().equals(me.getId()))
+                        .map(List::of)
+                        .orElse(List.of());
+            } else {
+                users = List.of(); // tag invalide → aucun résultat
+            }
+        } else {
+            // Recherche par pseudo (contient)
+            if (q.length() < 2) {
+                throw new BusinessException("La recherche doit contenir au moins 2 caractères", HttpStatus.BAD_REQUEST);
+            }
+            users = userRepository.findByUsernameContainingIgnoreCaseAndIdNot(q, me.getId());
+        }
+
         return users.stream()
                 .limit(20)
                 .map(u -> {

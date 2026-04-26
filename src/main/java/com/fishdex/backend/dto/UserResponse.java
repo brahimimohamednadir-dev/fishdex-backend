@@ -13,6 +13,7 @@ public class UserResponse {
     private Long id;
     private String email;
     private String username;
+    private String userTag;
     private Boolean isPremium;
     private Integer captureCount;
     private Boolean emailVerified;
@@ -24,6 +25,7 @@ public class UserResponse {
                 .id(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
+                .userTag(user.getUserTag())
                 .isPremium(user.getIsPremium())
                 .captureCount(user.getCaptureCount())
                 .emailVerified(user.getEmailVerified())

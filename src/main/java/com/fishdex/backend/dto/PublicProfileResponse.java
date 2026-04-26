@@ -16,6 +16,7 @@ public class PublicProfileResponse {
 
     private Long   userId;
     private String username;
+    private String userTag;
     private LocalDateTime memberSince;
 
     // ── Stats publiques ───────────────────────────────────────────────────
