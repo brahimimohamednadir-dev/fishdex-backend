@@ -37,7 +37,7 @@ public class Notification {
     @Column(nullable = false, length = 40)
     private NotificationType type;
 
-    @Column(nullable = false)
+    @Column(name = "is_read", nullable = false)
     @Builder.Default
     private boolean read = false;
 
