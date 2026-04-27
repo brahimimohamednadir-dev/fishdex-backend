@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 @Configuration
 @EnableWebSecurity
@@ -46,9 +47,15 @@ public class SecurityConfig {
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .xssProtection(xss -> xss
                                 .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
+                        .addHeaderWriter((req, res) -> {
+                            res.setHeader("X-Content-Type-Options", "nosniff");
+                            res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+                            res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+                        })
                         .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; img-src 'self' data: https:; " +
-                                                  "frame-ancestors 'none'"))
+                                .policyDirectives("default-src 'self'; img-src 'self' https:; " +
+                                                  "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"))
                         .httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true)
                                 .maxAgeInSeconds(31_536_000))
@@ -70,8 +77,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/leaderboard").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
-                        // Admin temporaire
-                        .requestMatchers("/api/admin/**").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)
                         // Sessions — authentifié (géré par anyRequest)
                         // Tout le reste requiert une authentification

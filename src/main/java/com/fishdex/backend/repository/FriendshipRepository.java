@@ -40,4 +40,8 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
            "((f.requester = :u1 AND f.addressee = :u2) OR (f.requester = :u2 AND f.addressee = :u1)) " +
            "AND f.status = 'ACCEPTED'")
     boolean areFriends(@Param("u1") User u1, @Param("u2") User u2);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Friendship f WHERE f.requester = :user OR f.addressee = :friend")
+    void deleteAllByUserOrFriend(@Param("user") User user, @Param("friend") User friend);
 }

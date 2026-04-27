@@ -71,7 +71,14 @@
       "Bash(mvn spring-boot:run -Dspring-boot.run.arguments=\"--server.port=8081\")",
       "Bash(mvn spring-boot:run \"-Dspring-boot.run.arguments=--server.port=8081\")",
       "Bash(echo \"PID: $!\")",
-      "Bash(curl -s \"http://localhost:8081/api/admin/users?secret=fishdex-admin-2026\")"
+      "Bash(curl -s \"http://localhost:8081/api/admin/users?secret=fishdex-admin-2026\")",
+      "Bash(curl -s \"http://localhost:8081/api/leaderboard?type=captures&period=alltime\")",
+      "Bash(curl -s \"http://localhost:4200\")",
+      "Bash(findstr \":4200\")",
+      "Bash(curl -s \"http://localhost:8081/api/leaderboard?type=weight&period=alltime\")",
+      "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\)['data'][:3]; [print\\(f\\\\\"{e['rank']}. {e['username']} — {e['totalWeight']:.1f} kg\\\\\"\\) for e in data]\")",
+      "Bash(dir \"C:\\\\Users\\\\33767\\\\Projects\\\\fishdex-frontend\\\\src\\\\app\\\\features\" /B)",
+      "Bash(xargs wc *)"
     ]
   }
 }

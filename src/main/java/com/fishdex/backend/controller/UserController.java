@@ -5,6 +5,7 @@ import com.fishdex.backend.dto.*;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.repository.UserRepository;
 import com.fishdex.backend.service.AuthService;
+import com.fishdex.backend.service.GdprService;
 import com.fishdex.backend.service.RefreshTokenService;
 import com.fishdex.backend.service.UserService;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final GdprService gdprService;
 
     /** GET /api/users/me — Profil de l'utilisateur connecté */
     @GetMapping("/me")
@@ -115,6 +117,24 @@ public class UserController {
             Authentication authentication) {
         return ResponseEntity.ok(ApiResponse.ok(
                 userService.getPersonalStats(authentication.getName())));
+    }
+
+    // ── RGPD ─────────────────────────────────────────────────────────────────
+
+    /** GET /api/users/me/export — RGPD Article 20 : portabilité des données */
+    @GetMapping("/me/export")
+    public ResponseEntity<ApiResponse<GdprExportResponse>> exportMyData(Authentication authentication) {
+        GdprExportResponse export = gdprService.exportMyData(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.ok("Export de vos données personnelles", export));
+    }
+
+    /** DELETE /api/users/me — RGPD Article 17 : droit à l'effacement */
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(
+            @Valid @RequestBody DeleteAccountRequest request,
+            Authentication authentication) {
+        gdprService.deleteMyAccount(authentication.getName(), request.getPassword());
+        return ResponseEntity.ok(ApiResponse.ok("Votre compte a été supprimé définitivement", null));
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.fishdex.backend.repository;
 
 import com.fishdex.backend.entity.Capture;
+import com.fishdex.backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,10 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
         JpaSpecificationExecutor<Capture> {
 
     Page<Capture> findByUserIdOrderByCaughtAtDesc(Long userId, Pageable pageable);
+
+    List<Capture> findByUserOrderByCaughtAtDesc(User user);
+
+    void deleteAllByUser(User user);
 
     long countByUserId(Long userId);
 

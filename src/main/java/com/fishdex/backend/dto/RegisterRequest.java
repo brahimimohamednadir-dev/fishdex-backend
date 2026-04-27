@@ -1,8 +1,10 @@
 package com.fishdex.backend.dto;
 
 import com.fishdex.backend.dto.validation.ValidPassword;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -21,4 +23,9 @@ public class RegisterRequest {
     @NotBlank(message = "Le mot de passe est obligatoire")
     @ValidPassword
     private String password;
+
+    /** RGPD — Article 7 : consentement explicite requis */
+    @NotNull(message = "L'acceptation des conditions est obligatoire")
+    @AssertTrue(message = "Vous devez accepter les conditions d'utilisation et la politique de confidentialité")
+    private Boolean privacyAccepted;
 }

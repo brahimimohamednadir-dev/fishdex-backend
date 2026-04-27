@@ -1,7 +1,9 @@
 package com.fishdex.backend.repository;
 
 import com.fishdex.backend.entity.CaptureComment;
+import com.fishdex.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,4 +19,8 @@ public interface CaptureCommentRepository extends JpaRepository<CaptureComment, 
                                              org.springframework.data.domain.Pageable pageable);
 
     int countByCaptureId(Long captureId);
+
+    @Modifying
+    @Query("DELETE FROM CaptureComment c WHERE c.user = :user")
+    void deleteAllByUser(@Param("user") User user);
 }
