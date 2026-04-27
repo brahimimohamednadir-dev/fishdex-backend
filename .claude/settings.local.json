@@ -68,7 +68,10 @@
       "Bash(curl -s http://localhost:8080/actuator/health)",
       "Bash(taskkill /F /IM java.exe /T)",
       "Bash(taskkill /F /IM javaw.exe /T)",
-      "Bash(mvn spring-boot:run -Dspring-boot.run.arguments=\"--server.port=8081\")"
+      "Bash(mvn spring-boot:run -Dspring-boot.run.arguments=\"--server.port=8081\")",
+      "Bash(mvn spring-boot:run \"-Dspring-boot.run.arguments=--server.port=8081\")",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s \"http://localhost:8081/api/admin/users?secret=fishdex-admin-2026\")"
     ]
   }
 }

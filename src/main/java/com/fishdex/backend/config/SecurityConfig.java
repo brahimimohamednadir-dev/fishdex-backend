@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/feed/captures/*/comments").permitAll()
                         // Profil public — accessible sans auth (mais enrichi si connecté)
                         .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
+                        // Leaderboard — public
+                        .requestMatchers(HttpMethod.GET, "/api/leaderboard").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
                         // Admin temporaire
