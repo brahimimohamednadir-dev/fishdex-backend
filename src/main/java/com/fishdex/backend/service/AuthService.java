@@ -18,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -63,8 +65,12 @@ public class AuthService implements UserDetailsService {
         User user = User.builder()
                 .email(email)
                 .username(username)
+                .userTag(generateUniqueTag())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .emailVerified(false)
+                .marketingConsent(Boolean.TRUE.equals(request.getMarketingConsent()))
+                .analyticsConsent(Boolean.TRUE.equals(request.getAnalyticsConsent()))
+                .consentsUpdatedAt(java.time.LocalDateTime.now())
                 .build();
 
         User saved = userRepository.save(user);
@@ -145,9 +151,10 @@ public class AuthService implements UserDetailsService {
                     return User.builder()
                             .email(info.email().toLowerCase())
                             .username(username)
+                            .userTag(generateUniqueTag())
                             .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString()))
                             .googleId(info.googleId())
-                            .emailVerified(true) // Google a déjà vérifié l'email
+                            .emailVerified(true)
                             .emailVerifiedAt(java.time.LocalDateTime.now())
                             .build();
                 });
@@ -221,6 +228,19 @@ public class AuthService implements UserDetailsService {
                 .user(UserResponse.from(user))
                 .requiresTwoFactor(false)
                 .build();
+    }
+
+    /**
+     * Génère un tag unique à 5 chiffres (00000–99999).
+     * Réessaie jusqu'à trouver un tag libre (max 100 tentatives).
+     */
+    private String generateUniqueTag() {
+        SecureRandom rng = new SecureRandom();
+        for (int i = 0; i < 100; i++) {
+            String tag = String.format("%05d", rng.nextInt(100_000));
+            if (!userRepository.existsByUserTag(tag)) return tag;
+        }
+        throw new BusinessException("Impossible de générer un tag unique", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private String generateUsernameFromEmail(String email) {

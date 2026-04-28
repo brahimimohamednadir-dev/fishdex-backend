@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fishdex.backend.dto.LoginRequest;
 import com.fishdex.backend.dto.RegisterRequest;
 import com.fishdex.backend.repository.BadgeRepository;
-import com.fishdex.backend.repository.*;
+import com.fishdex.backend.repository.CaptureRepository;
+import com.fishdex.backend.repository.EmailVerificationTokenRepository;
+import com.fishdex.backend.repository.PreAuthTokenRepository;
+import com.fishdex.backend.repository.RefreshTokenRepository;
+import com.fishdex.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,25 +24,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class SpeciesControllerTest extends com.fishdex.backend.BaseIntegrationTest {
+class SpeciesControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BadgeRepository badgeRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private BadgeRepository badgeRepository;
+    @Autowired private CaptureRepository captureRepository;
+    @Autowired private RefreshTokenRepository refreshTokenRepository;
+    @Autowired private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    @Autowired private PreAuthTokenRepository preAuthTokenRepository;
 
     private String token;
 
     @BeforeEach
     void setUp() throws Exception {
-        cleanAll();
+        // Ordre FK : captures → pre_auth/email_verif → refresh_tokens → badges → users
+        captureRepository.deleteAll();
+        preAuthTokenRepository.deleteAll();
+        emailVerificationTokenRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
+        badgeRepository.deleteAll();
+        userRepository.deleteAll();
 
         RegisterRequest register = new RegisterRequest();
         register.setEmail("pecheur@fishdex.fr");

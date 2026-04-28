@@ -1,6 +1,7 @@
 package com.fishdex.backend.repository;
 
 import com.fishdex.backend.entity.Capture;
+import com.fishdex.backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,10 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
         JpaSpecificationExecutor<Capture> {
 
     Page<Capture> findByUserIdOrderByCaughtAtDesc(Long userId, Pageable pageable);
+
+    List<Capture> findByUserOrderByCaughtAtDesc(User user);
+
+    void deleteAllByUser(User user);
 
     long countByUserId(Long userId);
 
@@ -45,7 +50,8 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
     long countByUserIdAndCaughtAtAfter(@Param("userId") Long userId,
                                        @Param("since") LocalDateTime since);
 
-    @Query("SELECT COUNT(DISTINCT c.speciesName) FROM Capture c WHERE c.user.id = :userId")
+    @Query("SELECT COUNT(DISTINCT c.species.id) FROM Capture c " +
+           "WHERE c.user.id = :userId AND c.species IS NOT NULL")
     long countDistinctSpeciesByUserId(@Param("userId") Long userId);
 
     /** Retourne { speciesName, count } triés par count DESC */
@@ -65,36 +71,61 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
            "GROUP BY YEAR(c.caughtAt), MONTH(c.caughtAt) ORDER BY cnt DESC")
     List<Object[]> findCapturesByMonthForUser(@Param("userId") Long userId, Pageable pageable);
 
-    // ── Par espèce (FK) — pour la fiche espèce ───────────────────────────
+    // ── Feed social ──────────────────────────────────────────────────────
 
-    boolean existsByUserIdAndSpeciesId(Long userId, Long speciesId);
+    // ── Profil public ────────────────────────────────────────────────────
 
-    long countBySpeciesId(Long speciesId);
+    /** Captures publiques d'un utilisateur (pour la grille profil) */
+    Page<Capture> findByUserIdAndVisibilityOrderByCreatedAtDesc(
+            Long userId, Capture.Visibility visibility, Pageable pageable);
 
-    long countByUserIdAndSpeciesId(Long userId, Long speciesId);
+    /** Record le plus lourd par userId */
+    @Query("SELECT c FROM Capture c WHERE c.user.id = :userId ORDER BY c.weight DESC")
+    List<Capture> findTopByWeightForUser(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("SELECT AVG(c.weight) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId")
-    Double findAvgWeightByUserIdAndSpeciesId(@Param("userId") Long userId,
-                                             @Param("speciesId") Long speciesId);
+    // ── Stats personnelles ────────────────────────────────────────────────
 
-    @Query("SELECT MAX(c.caughtAt) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId")
-    LocalDateTime findLastCatchByUserIdAndSpeciesId(@Param("userId") Long userId,
-                                                    @Param("speciesId") Long speciesId);
+    /** Captures par mois pour une année donnée : (month, count) */
+    @Query("SELECT MONTH(c.caughtAt), COUNT(c) FROM Capture c " +
+           "WHERE c.user.id = :userId AND YEAR(c.caughtAt) = :year " +
+           "GROUP BY MONTH(c.caughtAt)")
+    List<Object[]> findMonthlyCaptureCountsForYear(@Param("userId") Long userId,
+                                                    @Param("year") int year);
 
-    @Query("SELECT COUNT(c) FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId " +
-           "AND YEAR(c.caughtAt) = :year")
-    long countByUserIdAndSpeciesIdAndYear(@Param("userId") Long userId,
-                                          @Param("speciesId") Long speciesId,
-                                          @Param("year") int year);
+    /** Records par espèce : (speciesName, count, maxWeight, maxLength) */
+    @Query("SELECT c.speciesName, COUNT(c), MAX(c.weight), MAX(c.length) FROM Capture c " +
+           "WHERE c.user.id = :userId " +
+           "GROUP BY c.speciesName ORDER BY COUNT(c) DESC")
+    List<Object[]> findSpeciesRecordsForUser(@Param("userId") Long userId, Pageable pageable);
 
-    /** Record personnel : capture la plus lourde pour cet utilisateur + espèce */
-    @Query("SELECT c FROM Capture c WHERE c.user.id = :userId AND c.species.id = :speciesId " +
-           "AND c.weight = (SELECT MAX(c2.weight) FROM Capture c2 WHERE c2.user.id = :userId AND c2.species.id = :speciesId)")
-    Optional<Capture> findPersonalRecordByUserIdAndSpeciesId(@Param("userId") Long userId,
-                                                              @Param("speciesId") Long speciesId);
+    /** Spots GPS groupés (lat/lng arrondis à 2 décimales) : (lat, lng, count) */
+    @Query("SELECT ROUND(c.latitude, 2), ROUND(c.longitude, 2), COUNT(c) FROM Capture c " +
+           "WHERE c.user.id = :userId AND c.latitude IS NOT NULL AND c.longitude IS NOT NULL " +
+           "GROUP BY ROUND(c.latitude, 2), ROUND(c.longitude, 2) ORDER BY COUNT(c) DESC")
+    List<Object[]> findFavoriteSpotsForUser(@Param("userId") Long userId, Pageable pageable);
 
-    /** Record FishDex : capture la plus lourde toutes espèces confondues */
-    @Query("SELECT c FROM Capture c WHERE c.species.id = :speciesId " +
-           "AND c.weight = (SELECT MAX(c2.weight) FROM Capture c2 WHERE c2.species.id = :speciesId)")
-    Optional<Capture> findFishDexRecordBySpeciesId(@Param("speciesId") Long speciesId);
+    /** Dernière capture d'un utilisateur (pour l'aperçu ami) */
+    Optional<Capture> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
+    /** Feed : captures des amis (visibility PUBLIC ou FRIENDS) + propres captures */
+    @Query("SELECT c FROM Capture c WHERE " +
+           "(c.user.id IN :friendIds AND c.visibility IN ('PUBLIC', 'FRIENDS')) " +
+           "OR (c.user.id = :myId) " +
+           "ORDER BY c.createdAt DESC")
+    Page<Capture> findFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                                   @Param("myId") Long myId,
+                                   Pageable pageable);
+
+    /** Feed public (pour les utilisateurs sans amis ou pour la découverte) */
+    @Query("SELECT c FROM Capture c WHERE c.visibility = 'PUBLIC' ORDER BY c.createdAt DESC")
+    Page<Capture> findPublicCaptures(Pageable pageable);
+
+    /** Nombre de nouvelles captures dans le feed depuis une date */
+    @Query("SELECT COUNT(c) FROM Capture c WHERE " +
+           "((c.user.id IN :friendIds AND c.visibility IN ('PUBLIC', 'FRIENDS')) " +
+           "OR c.user.id = :myId) " +
+           "AND c.createdAt > :since")
+    long countNewFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                              @Param("myId") Long myId,
+                              @Param("since") LocalDateTime since);
 }

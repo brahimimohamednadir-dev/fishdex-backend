@@ -94,9 +94,6 @@ public class GroupService {
     public void deleteGroup(Long id, User user) {
         Group group = loadGroup(id);
         requireOwner(id, user);
-        // Delete child records before the group to avoid FK constraint errors
-        joinRequestRepository.deleteAllByGroupId(id);
-        groupMemberRepository.deleteAllByGroupId(id);
         groupRepository.delete(group);
         log.info("Groupe {} supprimé par {}", id, user.getEmail());
     }

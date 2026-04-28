@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Seed du catalogue des 20 espèces de poissons d'eau douce françaises.
- * Aligné sur le modèle TypeScript Species du frontend Angular.
+ * Champs alignés sur le modèle frontend Angular (minWeightKg, maxWeightKg, habitat).
  */
 @Component
 @Order(1)
@@ -35,175 +35,123 @@ public class DataInitializer implements ApplicationRunner {
         log.info("Insertion du catalogue des espèces...");
 
         speciesRepository.saveAll(List.of(
-
-            s("Brochet", "Esox lucius", "Esocidae",
+            s("Brochet",             "Esox lucius",
               "Prédateur emblématique des eaux douces françaises. Reconnaissable à son museau allongé et ses dents acérées.",
-              "https://upload.wikimedia.org/wikipedia/commons/6/6e/Esox_lucius_2009.jpg",
-              0.3, 15.0, 50.0, 130.0, 50,
-              "FRESHWATER", "ADVANCED",
-              "Rivières et lacs à végétation", "Zones littorales avec herbiers", "0-5 m", "10-22°C"),
+              null, "https://upload.wikimedia.org/wikipedia/commons/6/6e/Esox_lucius_2009.jpg",
+              0.3, 15.0, "Rivières et lacs à végétation", 50, "Esocidae"),
 
-            s("Carpe commune", "Cyprinus carpio", "Cyprinidae",
+            s("Carpe commune",       "Cyprinus carpio",
               "Poisson robuste très prisé des carpistes. Peut dépasser 30 kg dans de bonnes conditions.",
-              null,
-              1.0, 35.0, 30.0, 120.0, null,
-              "FRESHWATER", "INTERMEDIATE",
-              "Étangs, lacs et cours d'eau lents", "Fonds vaseux, zones calmes", "0-6 m", "15-28°C"),
+              null, null,
+              1.0, 35.0, "Étangs, lacs et cours d'eau lents", null, "Cyprinidae"),
 
-            s("Sandre", "Sander lucioperca", "Percidae",
+            s("Sandre",              "Sander lucioperca",
               "Prédateur nocturne aux yeux caractéristiques. Excellente chair appréciée des pêcheurs au leurre.",
-              null,
-              0.5, 12.0, 35.0, 100.0, 40,
-              "FRESHWATER", "ADVANCED",
-              "Lacs, plans d'eau et grands fleuves", "Profondeurs et fonds durs", "3-15 m", "10-25°C"),
+              null, null,
+              0.5, 12.0, "Lacs, plans d'eau et grands fleuves", 40, "Percidae"),
 
-            s("Perche", "Perca fluviatilis", "Percidae",
+            s("Perche",              "Perca fluviatilis",
               "Petit prédateur rayé très commun. Apprécie les eaux fraîches et bien oxygénées.",
-              null,
-              0.1, 3.0, 15.0, 50.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Lacs, rivières et étangs", "Zones ombragées et herbiers", "1-8 m", "8-23°C"),
+              null, null,
+              0.1, 3.0, "Lacs, rivières et étangs", null, "Percidae"),
 
-            s("Silure glane", "Silurus glanis", "Siluridae",
+            s("Silure glane",        "Silurus glanis",
               "Le plus grand poisson d'eau douce d'Europe. Peut dépasser 2 m et 100 kg en France.",
-              null,
-              5.0, 100.0, 60.0, 250.0, null,
-              "FRESHWATER", "EXPERT",
-              "Grands fleuves et plans d'eau profonds", "Profondeurs, anfractuosités", "5-30 m", "18-28°C"),
+              null, null,
+              5.0, 100.0, "Grands fleuves et plans d'eau profonds", null, "Siluridae"),
 
-            s("Truite fario", "Salmo trutta fario", "Salmonidae",
+            s("Truite fario",        "Salmo trutta fario",
               "Salmonidé emblématique des rivières de première catégorie. Très sensible à la qualité de l'eau.",
-              null,
-              0.1, 5.0, 15.0, 80.0, 23,
-              "FRESHWATER", "EXPERT",
-              "Rivières froides et rapides de montagne", "Courants rapides et fonds de gravier", "0-3 m", "5-16°C"),
+              null, null,
+              0.1, 5.0, "Rivières froides et rapides de montagne", 23, "Salmonidae"),
 
-            s("Barbeau fluviatile", "Barbus barbus", "Cyprinidae",
+            s("Barbeau fluviatile",  "Barbus barbus",
               "Poisson de fond des rivières courantes. Reconnaissable à ses quatre barbillons.",
-              null,
-              0.3, 8.0, 25.0, 90.0, 30,
-              "FRESHWATER", "INTERMEDIATE",
-              "Rivières à courant moyen", "Fonds de gravier et galets", "0-4 m", "12-22°C"),
+              null, null,
+              0.3, 8.0, "Rivières à courant moyen", 30, "Cyprinidae"),
 
-            s("Black-bass", "Micropterus salmoides", "Centrarchidae",
+            s("Black-bass",          "Micropterus salmoides",
               "Prédateur d'origine nord-américaine, populaire pour la pêche aux leurres de surface.",
-              null,
-              0.2, 5.0, 25.0, 60.0, null,
-              "FRESHWATER", "INTERMEDIATE",
-              "Étangs et lacs chauds avec végétation", "Herbiers et bois immergés", "0-6 m", "18-28°C"),
+              null, null,
+              0.2, 5.0, "Étangs et lacs chauds avec végétation", null, "Centrarchidae"),
 
-            s("Chevaine", "Squalius cephalus", "Cyprinidae",
+            s("Chevaine",            "Squalius cephalus",
               "Cyprinidé opportuniste à grosse tête. Présent dans presque tous les cours d'eau français.",
-              null,
-              0.1, 4.0, 20.0, 60.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Rivières et ruisseaux variés", "Surface et mi-eau, zones calmes", "0-3 m", "10-24°C"),
+              null, null,
+              0.1, 4.0, "Rivières et ruisseaux variés", null, "Cyprinidae"),
 
-            s("Tanche", "Tinca tinca", "Cyprinidae",
+            s("Tanche",              "Tinca tinca",
               "Poisson lent et massif des étangs vaseux. Sa peau est couverte d'un mucus caractéristique.",
-              null,
-              0.2, 4.0, 20.0, 60.0, null,
-              "FRESHWATER", "INTERMEDIATE",
-              "Étangs et marais à fond vaseux", "Vase et végétation dense", "0-4 m", "15-28°C"),
+              null, null,
+              0.2, 4.0, "Étangs et marais à fond vaseux", null, "Cyprinidae"),
 
-            s("Brème commune", "Abramis brama", "Cyprinidae",
+            s("Brème commune",       "Abramis brama",
               "Grand cyprinidé aplati latéralement. Vit en bancs dans les plans d'eau calmes.",
-              null,
-              0.3, 5.0, 20.0, 75.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Lacs, canaux et cours d'eau lents", "Fonds vaseux en eau calme", "1-8 m", "12-24°C"),
+              null, null,
+              0.3, 5.0, "Lacs, canaux et cours d'eau lents", null, "Cyprinidae"),
 
-            s("Rotengle", "Scardinius erythrophthalmus", "Cyprinidae",
+            s("Rotengle",            "Scardinius erythrophthalmus",
               "Cousin du gardon, reconnaissable à ses nageoires rouges vif et ses yeux orange.",
-              null,
-              0.05, 1.5, 12.0, 35.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Étangs et plans d'eau calmes", "Surface et herbiers", "0-2 m", "16-26°C"),
+              null, null,
+              0.05, 1.5, "Étangs et plans d'eau calmes", null, "Cyprinidae"),
 
-            s("Ablette", "Alburnus alburnus", "Cyprinidae",
+            s("Ablette",             "Alburnus alburnus",
               "Petit poisson argenté vivant en bancs en surface. Indicateur d'une bonne qualité des eaux.",
-              null,
-              0.01, 0.1, 8.0, 20.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Rivières et lacs à eaux claires", "Surface libre, eaux courantes", "0-1 m", "12-24°C"),
+              null, null,
+              0.01, 0.1, "Rivières et lacs à eaux claires", null, "Cyprinidae"),
 
-            s("Gardon", "Rutilus rutilus", "Cyprinidae",
+            s("Gardon",              "Rutilus rutilus",
               "L'un des poissons les plus communs de France. Yeux rouges caractéristiques, très grégaire.",
-              null,
-              0.05, 0.5, 10.0, 35.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Lacs, rivières et canaux", "Zones calmes et herbiers", "0-5 m", "10-24°C"),
+              null, null,
+              0.05, 0.5, "Lacs, rivières et canaux", null, "Cyprinidae"),
 
-            s("Ide mélanote", "Leuciscus idus", "Cyprinidae",
+            s("Ide mélanote",        "Leuciscus idus",
               "Grand cyprinidé au corps fuselé, surtout présent dans les grands fleuves du Nord-Est.",
-              null,
-              0.3, 4.0, 25.0, 60.0, null,
-              "FRESHWATER", "INTERMEDIATE",
-              "Grands fleuves et rivières larges", "Mi-eau et surface", "0-5 m", "10-22°C"),
+              null, null,
+              0.3, 4.0, "Grands fleuves et rivières larges", null, "Cyprinidae"),
 
-            s("Goujon", "Gobio gobio", "Cyprinidae",
+            s("Goujon",              "Gobio gobio",
               "Petit poisson de fond à deux barbillons. Indicateur d'eaux claires et bien oxygénées.",
-              null,
-              0.01, 0.15, 6.0, 18.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Rivières et ruisseaux à courant", "Fonds de gravier et sable", "0-2 m", "8-22°C"),
+              null, null,
+              0.01, 0.15, "Rivières et ruisseaux à courant", null, "Cyprinidae"),
 
-            s("Vairon", "Phoxinus phoxinus", "Cyprinidae",
+            s("Vairon",              "Phoxinus phoxinus",
               "Minuscule cyprinidé des torrents de montagne. Vit en bancs serrés dans les eaux fraîches.",
-              null,
-              0.005, 0.05, 4.0, 12.0, null,
-              "FRESHWATER", "BEGINNER",
-              "Torrents et ruisseaux de montagne", "Courants rapides, galets", "0-1 m", "4-18°C"),
+              null, null,
+              0.005, 0.05, "Torrents et ruisseaux de montagne", null, "Cyprinidae"),
 
-            s("Lotte de rivière", "Lota lota", "Gadidae",
+            s("Lotte de rivière",    "Lota lota",
               "Seul gadidé d'eau douce d'Europe. Mœurs nocturnes, apprécie les eaux froides.",
-              null,
-              0.2, 4.0, 25.0, 70.0, null,
-              "FRESHWATER", "ADVANCED",
-              "Rivières et lacs froids du Nord", "Profondeurs et fonds rocheux", "5-30 m", "4-14°C"),
+              null, null,
+              0.2, 4.0, "Rivières et lacs froids du Nord", null, "Gadidae"),
 
-            s("Omble chevalier", "Salvelinus alpinus", "Salmonidae",
+            s("Omble chevalier",     "Salvelinus alpinus",
               "Salmonidé des lacs de montagne aux reflets multicolores. Très sensible à la température de l'eau.",
-              null,
-              0.1, 5.0, 15.0, 60.0, null,
-              "FRESHWATER", "EXPERT",
-              "Lacs de montagne profonds et froids", "Profondeurs, eaux très froides", "10-50 m", "4-12°C"),
+              null, null,
+              0.1, 5.0, "Lacs de montagne profonds et froids", null, "Salmonidae"),
 
-            s("Ombre commun", "Thymallus thymallus", "Thymallidae",
+            s("Ombre commun",        "Thymallus thymallus",
               "Salmonidé reconnaissable à sa grande nageoire dorsale. Habitant des rivières rapides et fraîches.",
-              null,
-              0.1, 3.0, 20.0, 55.0, 30,
-              "FRESHWATER", "EXPERT",
-              "Rivières rapides et claires", "Courants vifs, fonds graveleux", "0-3 m", "5-16°C")
-
+              null, null,
+              0.1, 3.0, "Rivières rapides et claires", 30, "Thymallidae")
         ));
 
         log.info("Catalogue OK — 20 espèces insérées.");
     }
 
-    private Species s(String commonName, String latinName, String family,
-                      String description, String imageUrl,
-                      Double minWeightKg, Double maxWeightKg,
-                      Double minLengthCm, Double maxLengthCm, Integer minLegalSize,
-                      String waterTypes, String difficulty,
-                      String habitat, String habitatDetail, String preferredDepth, String temperature) {
+    private Species s(String commonName, String latinName, String description, String imageUrl,
+                      String imageUrlOverride, Double minWeightKg, Double maxWeightKg,
+                      String habitat, Integer minLegalSize, String family) {
         return Species.builder()
                 .commonName(commonName)
                 .latinName(latinName)
-                .family(family)
                 .description(description)
-                .imageUrl(imageUrl)
+                .imageUrl(imageUrlOverride)
                 .minWeightKg(minWeightKg)
                 .maxWeightKg(maxWeightKg)
-                .minLengthCm(minLengthCm)
-                .maxLengthCm(maxLengthCm)
-                .minLegalSize(minLegalSize)
-                .waterTypes(waterTypes)
-                .difficulty(difficulty)
                 .habitat(habitat)
-                .habitatDetail(habitatDetail)
-                .preferredDepth(preferredDepth)
-                .temperature(temperature)
+                .minLegalSize(minLegalSize)
+                .family(family)
                 .build();
     }
 }

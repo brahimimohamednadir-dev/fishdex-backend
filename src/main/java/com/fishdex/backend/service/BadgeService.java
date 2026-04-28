@@ -27,10 +27,6 @@ public class BadgeService {
         if (captureCount >= 1)  award(user, Badge.BadgeType.FIRST_CAPTURE);
         if (captureCount >= 5)  award(user, Badge.BadgeType.CAPTURE_5);
         if (captureCount >= 10) award(user, Badge.BadgeType.CAPTURE_10);
-
-        long distinctSpecies = captureRepository.countDistinctSpeciesByUserId(user.getId());
-        if (distinctSpecies >= 3) award(user, Badge.BadgeType.SPECIES_3);
-        if (distinctSpecies >= 5) award(user, Badge.BadgeType.SPECIES_5);
     }
 
     /**

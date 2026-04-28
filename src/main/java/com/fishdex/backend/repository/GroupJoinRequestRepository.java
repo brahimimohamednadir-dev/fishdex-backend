@@ -15,6 +15,4 @@ public interface GroupJoinRequestRepository extends JpaRepository<GroupJoinReque
     boolean existsByGroupIdAndUserIdAndStatus(Long groupId, Long userId, GroupJoinRequest.RequestStatus status);
 
     Optional<GroupJoinRequest> findByGroupIdAndUserId(Long groupId, Long userId);
-
-    void deleteAllByGroupId(Long groupId);
 }

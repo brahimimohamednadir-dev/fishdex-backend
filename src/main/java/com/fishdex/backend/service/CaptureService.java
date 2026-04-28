@@ -10,8 +10,10 @@ import com.fishdex.backend.repository.CaptureRepository;
 import com.fishdex.backend.repository.SpeciesRepository;
 import com.fishdex.backend.repository.UserRepository;
 import com.fishdex.backend.repository.spec.CaptureSpecification;
+import com.fishdex.backend.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +38,19 @@ public class CaptureService {
     private static final Set<String> ALLOWED_SORT_FIELDS =
             Set.of("caughtAt", "weight", "length", "createdAt");
 
+    @Value("${cloudinary.cloud-name:demo}")
+    private String cloudinaryCloudName;
+
+    @Value("${cloudinary.api-key:}")
+    private String cloudinaryApiKey;
+
+    @Value("${cloudinary.api-secret:}")
+    private String cloudinaryApiSecret;
+
     private final CaptureRepository captureRepository;
     private final SpeciesRepository speciesRepository;
     private final UserRepository userRepository;
-    private final BadgeService badgeService;
-    private final CloudinaryService cloudinaryService;
+    private final WeatherService weatherService;
 
     // ── Création ──────────────────────────────────────────────────────────
 
@@ -56,6 +67,16 @@ public class CaptureService {
         Species species = resolveSpecies(request);
         String speciesName = resolveSpeciesName(request, species);
 
+        com.fishdex.backend.entity.Capture.Visibility visibility =
+                com.fishdex.backend.entity.Capture.Visibility.PUBLIC;
+        if (request.getVisibility() != null) {
+            try { visibility = com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility()); }
+            catch (IllegalArgumentException ignored) {}
+        }
+
+        Species species = resolveSpecies(request);
+        String speciesName = resolveSpeciesName(request, species);
+
         Capture capture = Capture.builder()
                 .user(user)
                 .speciesName(speciesName)
@@ -66,14 +87,26 @@ public class CaptureService {
                 .longitude(request.getLongitude())
                 .note(request.getNote())
                 .caughtAt(request.getCaughtAt())
+                .visibility(visibility)
                 .build();
+
+        // Enrichissement météo si GPS présent
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            weatherService.fetchWeather(request.getLatitude(), request.getLongitude())
+                    .ifPresent(w -> {
+                        capture.setWeatherTemp(w.temperatureC());
+                        capture.setWeatherWind(w.windSpeedMs());
+                        capture.setWeatherPressure(w.pressureHpa());
+                        capture.setWeatherClouds(w.cloudCoverage());
+                        capture.setWeatherDesc(w.description());
+                        capture.setWeatherIcon(w.icon());
+                    });
+        }
 
         Capture saved = captureRepository.save(capture);
 
         user.setCaptureCount(user.getCaptureCount() + 1);
         userRepository.save(user);
-
-        badgeService.checkAndAwardBadges(user);
 
         log.info("Capture créée — user={}, espèce={}, poids={}kg",
                 user.getEmail(), speciesName, request.getWeight());
@@ -130,6 +163,10 @@ public class CaptureService {
         capture.setLongitude(request.getLongitude());
         capture.setNote(request.getNote());
         capture.setCaughtAt(request.getCaughtAt());
+        if (request.getVisibility() != null) {
+            try { capture.setVisibility(com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility())); }
+            catch (IllegalArgumentException ignored) {}
+        }
 
         return CaptureResponse.from(captureRepository.save(capture));
     }
@@ -155,15 +192,17 @@ public class CaptureService {
     public CaptureResponse uploadPhoto(Long id, MultipartFile file, User user) {
         Capture capture = findAndCheckOwner(id, user);
 
-        try {
-            String photoUrl = cloudinaryService.uploadPhoto(file);
-            capture.setPhotoUrl(photoUrl);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (IOException e) {
-            log.error("Erreur upload photo: {}", e.getMessage(), e);
-            throw new BusinessException("Impossible d'uploader la photo", HttpStatus.SERVICE_UNAVAILABLE);
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("Le fichier photo est vide", HttpStatus.BAD_REQUEST);
         }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BusinessException("Seules les images sont acceptées", HttpStatus.BAD_REQUEST);
+        }
+
+        String photoUrl = uploadToCloudinary(file);
+        capture.setPhotoUrl(photoUrl);
         Capture saved = captureRepository.save(capture);
 
         log.info("Photo uploadée pour capture {} par {}", id, user.getEmail());
@@ -210,4 +249,82 @@ public class CaptureService {
                 HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Upload vers Cloudinary si les credentials sont configurés.
+     * Sinon génère un nom de fichier unique (placeholder pour le dev local).
+     */
+    private String uploadToCloudinary(MultipartFile file) {
+        if (cloudinaryApiKey == null || cloudinaryApiKey.isBlank()) {
+            // Mode dev sans Cloudinary : retourne un nom fictif
+            String ext = getExtension(file.getOriginalFilename());
+            String fakeName = "local_" + UUID.randomUUID() + ext;
+            log.warn("Cloudinary non configuré — photo non persistée : {}", fakeName);
+            return fakeName;
+        }
+
+        try {
+            // Cloudinary upload via leur REST API (sans SDK pour éviter une dépendance)
+            String url = "https://api.cloudinary.com/v1_1/" + cloudinaryCloudName + "/image/upload";
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            String boundary = UUID.randomUUID().toString();
+
+            // Construire le multipart body manuellement
+            byte[] fileBytes = file.getBytes();
+            String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
+            String signature = sha1Hex("timestamp=" + timestamp + cloudinaryApiSecret);
+
+            String bodyStart = "--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"file\"; filename=\"photo\"\r\n" +
+                    "Content-Type: " + file.getContentType() + "\r\n\r\n";
+            String bodyMiddle = "\r\n--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"timestamp\"\r\n\r\n" + timestamp +
+                    "\r\n--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"api_key\"\r\n\r\n" + cloudinaryApiKey +
+                    "\r\n--" + boundary + "\r\n" +
+                    "Content-Disposition: form-data; name=\"signature\"\r\n\r\n" + signature +
+                    "\r\n--" + boundary + "--\r\n";
+
+            byte[] bodyStartBytes  = bodyStart.getBytes();
+            byte[] bodyMiddleBytes = bodyMiddle.getBytes();
+            byte[] fullBody = new byte[bodyStartBytes.length + fileBytes.length + bodyMiddleBytes.length];
+            System.arraycopy(bodyStartBytes, 0, fullBody, 0, bodyStartBytes.length);
+            System.arraycopy(fileBytes, 0, fullBody, bodyStartBytes.length, fileBytes.length);
+            System.arraycopy(bodyMiddleBytes, 0, fullBody, bodyStartBytes.length + fileBytes.length, bodyMiddleBytes.length);
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofByteArray(fullBody))
+                    .build();
+
+            java.net.http.HttpResponse<String> response =
+                    client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            return om.readTree(response.body()).path("secure_url").asText();
+
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Erreur upload Cloudinary", e);
+            throw new BusinessException("Impossible d'uploader la photo", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+    }
+
+    private String getExtension(String filename) {
+        if (filename == null) return ".jpg";
+        int dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot) : ".jpg";
+    }
+
+    private String sha1Hex(String input) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] hash = md.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-1 unavailable", e);
+        }
+    }
 }
