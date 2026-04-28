@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
-import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 @Configuration
 @EnableWebSecurity
@@ -40,22 +38,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
 
                 // ── CORS auto-détecte le bean CorsConfigurationSource ─────────
-                .cors(Customizer.withDefaults())
+                .cors(cors -> cors.configure(http))
 
                 // ── Headers de sécurité ───────────────────────────────────────
                 .headers(headers -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .xssProtection(xss -> xss
                                 .headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
-                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
-                        .addHeaderWriter((req, res) -> {
-                            res.setHeader("X-Content-Type-Options", "nosniff");
-                            res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
-                            res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-                        })
                         .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; img-src 'self' https:; " +
-                                                  "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"))
+                                .policyDirectives("default-src 'self'; img-src 'self' data: https:; " +
+                                                  "frame-ancestors 'none'"))
                         .httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true)
                                 .maxAgeInSeconds(31_536_000))
@@ -69,14 +61,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/2fa/verify").permitAll()
                         // Catalogue espèces — public en lecture seule
                         .requestMatchers(HttpMethod.GET, "/api/species", "/api/species/**").permitAll()
-                        // Feed public (commentaires sans auth)
-                        .requestMatchers(HttpMethod.GET, "/api/feed/captures/*/comments").permitAll()
-                        // Profil public — accessible sans auth (mais enrichi si connecté)
-                        .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
-                        // Leaderboard — public
-                        .requestMatchers(HttpMethod.GET, "/api/leaderboard").permitAll()
+                        // Routes /me protégées (déclarées avant la route publique {username})
+                        .requestMatchers(HttpMethod.GET, "/api/users/me", "/api/users/me/**").authenticated()
+                        // Profil public d'un utilisateur — public en lecture seule
+                        .requestMatchers(HttpMethod.GET, "/api/users/{username}").permitAll()
                         // Actuator health
                         .requestMatchers("/actuator/health").permitAll()
+                        // Uploads locaux (mode dev sans Cloudinary)
+                        .requestMatchers("/uploads/**").permitAll()
                         // 2FA setup/enable/disable/status — authentifié (géré par anyRequest)
                         // Sessions — authentifié (géré par anyRequest)
                         // Tout le reste requiert une authentification

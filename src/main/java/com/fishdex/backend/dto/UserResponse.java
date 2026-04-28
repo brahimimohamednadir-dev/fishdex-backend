@@ -13,6 +13,7 @@ public class UserResponse {
     private Long id;
     private String email;
     private String username;
+    /** Tag discriminant ex. "0042" — affiché comme username#0042 dans le frontend */
     private String userTag;
     private Boolean isPremium;
     private Integer captureCount;
@@ -25,7 +26,7 @@ public class UserResponse {
                 .id(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
-                .userTag(user.getUserTag())
+                .userTag(user.getId() != null ? String.format("%04d", user.getId() % 10000) : "0000")
                 .isPremium(user.getIsPremium())
                 .captureCount(user.getCaptureCount())
                 .emailVerified(user.getEmailVerified())

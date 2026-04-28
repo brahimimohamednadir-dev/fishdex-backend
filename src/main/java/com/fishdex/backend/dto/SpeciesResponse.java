@@ -1,22 +1,30 @@
 package com.fishdex.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fishdex.backend.entity.Species;
 import com.fishdex.backend.entity.SpeciesTip;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Correspond à l'interface Species du frontend Angular.
- * Les champs absents de l'entité sont retournés null/vide —
- * le frontend les gère gracieusement avec des valeurs par défaut.
+ * Répond exactement à l'interface Species du frontend Angular.
+ * Les champs complexes (monthlyActivity, hourlyActivity, baits, techniques, equipment)
+ * renvoient des tableaux vides en v0 — le frontend affiche des états "empty".
  */
 @Data
 @Builder
 public class SpeciesResponse {
 
+    // ── Identité ──────────────────────────────────────────────────────────
     private Long id;
     private String commonName;
     private String latinName;
@@ -24,60 +32,163 @@ public class SpeciesResponse {
     private String description;
     private String imageUrl;
 
-    // Physical
+    // ── Dimensions ────────────────────────────────────────────────────────
     private Double minWeightKg;
     private Double maxWeightKg;
     private Double minLengthCm;
     private Double maxLengthCm;
 
-    // Habitat
+    // ── Classification ────────────────────────────────────────────────────
+    /** Ex : ["FRESHWATER"] ou ["FRESHWATER", "BRACKISH"] */
+    private List<String> waterTypes;
+    private String difficulty;
+    private String conservationStatus;
+
+    // ── Habitat ───────────────────────────────────────────────────────────
     private String habitat;
+    private String habitatDetail;
+    private String preferredDepth;
+    private String temperature;
 
-    // Community tips (peuplés uniquement dans le détail)
+    // ── Calendrier & activité ─────────────────────────────────────────────
+    @Builder.Default private List<MonthlyActivityDto> monthlyActivity = Collections.emptyList();
+    @Builder.Default private List<HourlyActivityDto>  hourlyActivity  = Collections.emptyList();
+
+    // ── Techniques & matériel ─────────────────────────────────────────────
+    @Builder.Default private List<BaitDto>      baits      = Collections.emptyList();
+    @Builder.Default private List<TechniqueDto> techniques = Collections.emptyList();
+    @Builder.Default private List<EquipmentDto> equipment  = Collections.emptyList();
+
+    // ── Communauté ────────────────────────────────────────────────────────
     private List<CommunityTipDto> communityTips;
+    private long totalCaptures;
+    private SpeciesRecordDto fishDexRecord;
 
-    // Listes vides — le frontend les gère avec @if / optional chaining
-    private List<Object> baits;
-    private List<Object> techniques;
-    private List<Object> equipment;
-    private List<Object> monthlyActivity;
-    private List<Object> hourlyActivity;
+    // ── Auth-dépendant ────────────────────────────────────────────────────
+    private boolean isCaught;
+    private SpeciesPersonalStatsDto personalStats;
 
-    // Stats dynamiques — null par défaut (non implémentées)
-    private Long totalCaptures;
-    private Object fishDexRecord;
-    private Boolean isCaught;
-    private Object personalStats;
+    // ── DTOs imbriqués ────────────────────────────────────────────────────
 
-    // ── Inner DTO ─────────────────────────────────────────────────────────
-
-    @Data
-    @Builder
+    @Data @Builder
     public static class CommunityTipDto {
         private Long id;
         private String content;
         private String authorUsername;
         private int upvotes;
         private boolean hasUpvoted;
-        private LocalDateTime createdAt;
-
-        public static CommunityTipDto from(SpeciesTip tip, boolean hasUpvoted) {
-            return CommunityTipDto.builder()
-                    .id(tip.getId())
-                    .content(tip.getContent())
-                    .authorUsername(tip.getUser().getUsername())
-                    .upvotes(tip.getUpvoteCount())
-                    .hasUpvoted(hasUpvoted)
-                    .createdAt(tip.getCreatedAt())
-                    .build();
-        }
+        private String createdAt;
     }
 
-    // ── Factory methods ───────────────────────────────────────────────────
+    @Data @Builder
+    public static class SpeciesRecordDto {
+        private double weight;
+        private Double length;
+        private String username;
+        private String date;
+    }
 
-    /** Pour la liste (sans tips) */
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class MonthlyActivityDto {
+        private int month;
+        private String status;
+        private boolean legalClosure;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class HourlyActivityDto {
+        private int hour;
+        private int activityLevel;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class BaitDto {
+        private Long id;
+        private String name;
+        private String type;
+        private int effectiveness;
+        private List<String> seasons;
+        private String conditions;
+        private String imageUrl;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class TechniqueDto {
+        private Long id;
+        private String name;
+        private String description;
+        private String difficulty;
+        private List<String> bestSeasons;
+        private String proTip;
+        private String commonMistake;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class EquipmentDto {
+        private String name;
+        private String description;
+        private String budget;
+        @JsonProperty("essential")
+        private boolean essential;
+    }
+
+    @Data @Builder
+    public static class SpeciesPersonalStatsDto {
+        private long totalCatches;
+        private PersonalRecordDto personalRecord;
+        private Double averageWeight;
+        private String lastCatch;
+        private long caughtThisYear;
+    }
+
+    @Data @Builder
+    public static class PersonalRecordDto {
+        private Double weight;
+        private Double length;
+        private String date;
+    }
+
+    // ── Jackson helper ────────────────────────────────────────────────────
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static <T> List<T> parseJson(String json, TypeReference<List<T>> ref) {
+        if (json == null || json.isBlank()) return Collections.emptyList();
+        try { return MAPPER.readValue(json, ref); }
+        catch (Exception e) { return Collections.emptyList(); }
+    }
+
+    // ── Factory — liste (sans données user) ──────────────────────────────
+
     public static SpeciesResponse from(Species species) {
-        return builder()
+        return fromWithContext(species, null, Collections.emptyList(), false, null, null, 0L);
+    }
+
+    // ── Factory — détail (avec données user + tips) ───────────────────────
+
+    public static SpeciesResponse fromWithContext(
+            Species species,
+            String currentUserEmail,
+            List<SpeciesTip> tips,
+            boolean caught,
+            SpeciesPersonalStatsDto personalStats,
+            SpeciesRecordDto fishDexRecord,
+            long totalCaptures) {
+
+        List<String> waterTypeList = parseWaterTypes(species.getWaterTypes());
+
+        List<CommunityTipDto> tipDtos = tips.stream()
+                .map(t -> CommunityTipDto.builder()
+                        .id(t.getId())
+                        .content(t.getContent())
+                        .authorUsername(t.getUser().getUsername())
+                        .upvotes(t.getUpvotes())
+                        .hasUpvoted(false) // enrichi dans SpeciesService quand user connecté
+                        .createdAt(t.getCreatedAt() != null ? t.getCreatedAt().toString() : null)
+                        .build())
+                .collect(Collectors.toList());
+
+        return SpeciesResponse.builder()
                 .id(species.getId())
                 .commonName(species.getCommonName())
                 .latinName(species.getLatinName())
@@ -86,20 +197,38 @@ public class SpeciesResponse {
                 .imageUrl(species.getImageUrl())
                 .minWeightKg(species.getMinWeightKg())
                 .maxWeightKg(species.getMaxWeightKg())
+                .minLengthCm(species.getMinLengthCm())
+                .maxLengthCm(species.getMaxLengthCm())
+                .waterTypes(waterTypeList)
+                .difficulty(species.getDifficulty())
+                .conservationStatus(species.getConservationStatus())
                 .habitat(species.getHabitat())
-                .communityTips(List.of())
-                .baits(List.of())
-                .techniques(List.of())
-                .equipment(List.of())
-                .monthlyActivity(List.of())
-                .hourlyActivity(List.of())
+                .habitatDetail(species.getHabitatDetail())
+                .preferredDepth(species.getPreferredDepth())
+                .temperature(species.getTemperature())
+                .monthlyActivity(parseJson(species.getMonthlyActivityJson(), new TypeReference<List<MonthlyActivityDto>>() {}))
+                .hourlyActivity(parseJson(species.getHourlyActivityJson(),   new TypeReference<List<HourlyActivityDto>>()   {}))
+                .baits(parseJson(species.getBaitsJson(),           new TypeReference<List<BaitDto>>()          {}))
+                .techniques(parseJson(species.getTechniquesJson(), new TypeReference<List<TechniqueDto>>()     {}))
+                .equipment(parseJson(species.getEquipmentJson(),   new TypeReference<List<EquipmentDto>>()     {}))
+                .communityTips(tipDtos)
+                .totalCaptures(totalCaptures)
+                .fishDexRecord(fishDexRecord)
+                .isCaught(caught)
+                .personalStats(personalStats)
                 .build();
     }
 
-    /** Pour le détail (avec tips) */
-    public static SpeciesResponse from(Species species, List<CommunityTipDto> tips) {
-        SpeciesResponse r = from(species);
-        r.setCommunityTips(tips);
-        return r;
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private static List<String> parseWaterTypes(String raw) {
+        if (raw == null || raw.isBlank()) return List.of("FRESHWATER");
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
+
+    /** Sérialisation JSON : "isCaught" (camelCase exact du frontend) */
+    public boolean isIsCaught() { return isCaught; }
 }

@@ -14,29 +14,23 @@ import java.util.List;
 public class CorsConfig {
 
     /**
-     * Origines autorisées — définir ALLOWED_ORIGINS en production
-     * Exemple : ALLOWED_ORIGINS=https://fishdex.fr,https://www.fishdex.fr
+     * ALLOWED_ORIGINS = origines séparées par des virgules.
+     * Ex prod : https://fishdex.fr,https://www.fishdex.fr
      */
-    @Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000}")
+    @Value("${ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}")
     private String allowedOriginsRaw;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         List<String> origins = Arrays.stream(allowedOriginsRaw.split(","))
                 .map(String::trim)
-                .filter(s -> !s.isBlank())
+                .filter(s -> !s.isEmpty())
                 .toList();
 
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(origins);                        // exactes, pas de pattern wildcard
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of(                         // headers explicites uniquement
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "X-Requested-With",
-                "Cache-Control"
-        ));
+        config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("X-Request-Id"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

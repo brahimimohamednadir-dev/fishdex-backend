@@ -18,12 +18,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByGoogleId(String googleId);
 
-    /** Recherche par pseudo (pour la recherche d'amis) */
+    /** Recherche d'utilisateurs par pseudo (exclut l'utilisateur courant) */
     List<User> findByUsernameContainingIgnoreCaseAndIdNot(String username, Long excludeId);
-
-    /** Recherche exacte par tag 5 chiffres */
-    Optional<User> findByUserTag(String userTag);
-
-    /** Vérifie si un tag est déjà pris */
-    boolean existsByUserTag(String userTag);
 }

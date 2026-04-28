@@ -48,9 +48,6 @@ public class CaptureRequest {
     @PastOrPresent(message = "La date de capture ne peut pas être dans le futur")
     private LocalDateTime caughtAt;
 
-    /**
-     * Visibilité : PUBLIC (défaut), FRIENDS, PRIVATE
-     * Non obligatoire — défaut côté entité : PUBLIC
-     */
+    /** PUBLIC | FRIENDS_ONLY | PRIVATE (défaut : PUBLIC) */
     private String visibility;
 }

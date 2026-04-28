@@ -16,11 +16,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.format.TextStyle;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -126,60 +130,55 @@ public class UserService {
 
     // ── Profil public ─────────────────────────────────────────────────────
 
-    /**
-     * GET /api/users/{username}
-     * viewerEmail = null si anonyme, sinon email du visiteur connecté.
-     */
     @Transactional(readOnly = true)
-    public PublicProfileResponse getPublicProfile(String username, String viewerEmail) {
+    public PublicProfileResponse getPublicProfile(String username, String currentUserEmail) {
         User target = userRepository.findByUsername(username)
-                .orElseThrow(() -> new BusinessException("Utilisateur introuvable", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Profil introuvable", HttpStatus.NOT_FOUND));
         Long targetId = target.getId();
 
-        long totalCaptures   = captureRepository.countByUserId(targetId);
-        long distinctSpecies = captureRepository.countDistinctSpeciesByUserId(targetId);
+        long totalCaptures    = captureRepository.countByUserId(targetId);
+        long distinctSpecies  = captureRepository.countDistinctSpeciesByUserId(targetId);
 
-        // Plus gros poisson
+        // Capture la plus lourde
+        Double heaviestKg = null;
         String heaviestSpecies = null;
-        Double heaviestKg      = null;
-        List<Capture> topW = captureRepository.findTopByWeightForUser(targetId, PageRequest.of(0, 1));
-        if (!topW.isEmpty()) {
-            heaviestKg      = topW.get(0).getWeight();
-            heaviestSpecies = topW.get(0).getSpeciesName();
+        Optional<Capture> heaviest = captureRepository.findHeaviestByUserId(targetId);
+        if (heaviest.isPresent()) {
+            heaviestKg      = heaviest.get().getWeight();
+            heaviestSpecies = heaviest.get().getSpeciesName();
         }
 
-        // 9 dernières captures publiques
+        // 5 dernières captures
         List<CaptureResponse> recent = captureRepository
-                .findByUserIdAndVisibilityOrderByCreatedAtDesc(
-                        targetId, Capture.Visibility.PUBLIC, PageRequest.of(0, 9))
-                .getContent()
+                .findTop5ByUserIdOrderByCaughtAtDesc(targetId)
                 .stream()
                 .map(CaptureResponse::from)
                 .toList();
 
         // Badges
         List<BadgeResponse> badges = badgeRepository.findByUserId(targetId)
-                .stream()
-                .map(BadgeResponse::from)
-                .toList();
+                .stream().map(BadgeResponse::from).toList();
 
-        // Statut d'amitié avec le visiteur
+        // Relation avec l'utilisateur courant
         String friendshipStatus = null;
-        Long   friendshipId     = null;
-        if (viewerEmail != null) {
-            User viewer = userRepository.findByEmail(viewerEmail).orElse(null);
-            if (viewer != null && !viewer.getId().equals(targetId)) {
-                Optional<Friendship> fs = friendshipRepository.findBetween(viewer, target);
-                if (fs.isPresent()) {
-                    Friendship f = fs.get();
-                    friendshipId = f.getId();
-                    if (f.getStatus() == Friendship.Status.ACCEPTED) {
+        Long friendshipId = null;
+        if (currentUserEmail != null && !currentUserEmail.isBlank()) {
+            userRepository.findByEmail(currentUserEmail).ifPresent(me -> {
+                // handled below outside lambda — see local variables
+            });
+            User me = userRepository.findByEmail(currentUserEmail).orElse(null);
+            if (me != null && !me.getId().equals(targetId)) {
+                Optional<Friendship> f = friendshipRepository.findBetweenUsers(me.getId(), targetId);
+                if (f.isPresent()) {
+                    Friendship fr = f.get();
+                    if (fr.getStatus() == Friendship.FriendshipStatus.ACCEPTED) {
                         friendshipStatus = "ACCEPTED";
-                    } else if (f.getRequester().getId().equals(viewer.getId())) {
+                    } else if (fr.getRequester().getId().equals(me.getId())) {
                         friendshipStatus = "PENDING_SENT";
                     } else {
                         friendshipStatus = "PENDING_RECEIVED";
                     }
+                    friendshipId = fr.getId();
                 } else {
                     friendshipStatus = "NONE";
                 }
@@ -189,8 +188,9 @@ public class UserService {
         return PublicProfileResponse.builder()
                 .userId(targetId)
                 .username(target.getUsername())
-                .userTag(target.getUserTag())
-                .memberSince(target.getCreatedAt())
+                .userTag(String.format("%04d", targetId % 10000))
+                .memberSince(target.getCreatedAt() != null
+                        ? target.getCreatedAt().toLocalDate().toString() : null)
                 .totalCaptures(totalCaptures)
                 .distinctSpecies(distinctSpecies)
                 .heaviestCatchKg(heaviestKg)
@@ -202,85 +202,75 @@ public class UserService {
                 .build();
     }
 
-    // ── Stats personnelles enrichies ──────────────────────────────────────
+    // ── Statistiques personnelles détaillées ──────────────────────────────
 
     @Transactional(readOnly = true)
     public PersonalStatsResponse getPersonalStats(String email) {
         User user = loadUserByEmail(email);
         Long userId = user.getId();
-        int currentYear = LocalDateTime.now().getYear();
 
-        LocalDateTime startOfMonth = LocalDateTime.now()
-                .withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        LocalDateTime startOfYear  = LocalDateTime.now()
-                .withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime now       = LocalDateTime.now();
+        LocalDateTime startYear = now.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime startMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        // Totaux
         long totalCaptures   = captureRepository.countByUserId(userId);
-        long thisYear        = captureRepository.countByUserIdAndCaughtAtAfter(userId, startOfYear);
-        long thisMonth       = captureRepository.countByUserIdAndCaughtAtAfter(userId, startOfMonth);
+        long thisYear        = captureRepository.countByUserIdAndCaughtAtAfter(userId, startYear);
+        long thisMonth       = captureRepository.countByUserIdAndCaughtAtAfter(userId, startMonth);
         long distinctSpecies = captureRepository.countDistinctSpeciesByUserId(userId);
 
-        // Records globaux
-        List<Capture> topWeight = captureRepository.findTopByWeightForUser(userId, PageRequest.of(0, 1));
-        Double heaviestKg      = topWeight.isEmpty() ? null : topWeight.get(0).getWeight();
-        String heaviestSpecies = topWeight.isEmpty() ? null : topWeight.get(0).getSpeciesName();
-        Double longestCm       = captureRepository.findMaxLengthByUserId(userId);
-        // Espèce pour la longueur max — requête simple
-        String longestSpecies  = null;
-        if (longestCm != null) {
-            var topLen = captureRepository.findAll().stream()
-                    .filter(c -> c.getUser().getId().equals(userId) && longestCm.equals(c.getLength()))
-                    .findFirst();
-            longestSpecies = topLen.map(Capture::getSpeciesName).orElse(null);
+        // Capture la plus lourde
+        Double heaviestKg      = null;
+        String heaviestSpecies = null;
+        Optional<Capture> heaviest = captureRepository.findHeaviestByUserId(userId);
+        if (heaviest.isPresent()) {
+            heaviestKg      = heaviest.get().getWeight();
+            heaviestSpecies = heaviest.get().getSpeciesName();
         }
 
-        // Courbe mensuelle : 12 mois de l'année en cours
-        Map<Integer, Long> monthlyCounts = new HashMap<>();
-        captureRepository.findMonthlyCaptureCountsForYear(userId, currentYear)
-                .forEach(row -> monthlyCounts.put(
-                        ((Number) row[0]).intValue(),
-                        ((Number) row[1]).longValue()
-                ));
+        // Capture la plus longue
+        Double longestCm      = null;
+        String longestSpecies = null;
+        List<Capture> longestList = captureRepository.findLongestByUserId(userId, PageRequest.of(0, 1));
+        if (!longestList.isEmpty()) {
+            longestCm      = longestList.get(0).getLength();
+            longestSpecies = longestList.get(0).getSpeciesName();
+        }
 
-        String[] monthLabels = {"Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"};
-        List<PersonalStatsResponse.MonthStat> monthlyCaptures = new ArrayList<>();
-        for (int m = 1; m <= 12; m++) {
-            monthlyCaptures.add(PersonalStatsResponse.MonthStat.builder()
-                    .month(m)
-                    .label(monthLabels[m - 1])
-                    .count(monthlyCounts.getOrDefault(m, 0L))
+        // Captures mensuelles — 12 derniers mois
+        LocalDateTime since12months = now.minusMonths(12);
+        List<Object[]> monthRows = captureRepository.findMonthlyCaptures(userId, since12months);
+        List<PersonalStatsResponse.MonthStatDto> monthlyCaptures = new ArrayList<>();
+        for (Object[] row : monthRows) {
+            int month  = ((Number) row[1]).intValue();
+            long count = ((Number) row[2]).longValue();
+            String label = java.time.Month.of(month).getDisplayName(TextStyle.SHORT, Locale.FRENCH);
+            monthlyCaptures.add(PersonalStatsResponse.MonthStatDto.builder()
+                    .month(month).label(label).count(count).build());
+        }
+
+        // Top espèces avec records
+        List<Object[]> speciesRows = captureRepository
+                .findTopSpeciesWithRecords(userId, PageRequest.of(0, 5));
+        List<PersonalStatsResponse.SpeciesRecordDto> topSpecies = new ArrayList<>();
+        for (Object[] row : speciesRows) {
+            topSpecies.add(PersonalStatsResponse.SpeciesRecordDto.builder()
+                    .speciesName((String) row[0])
+                    .count(((Number) row[1]).longValue())
+                    .recordWeight(row[2] != null ? ((Number) row[2]).doubleValue() : null)
+                    .recordLength(row[3] != null ? ((Number) row[3]).doubleValue() : null)
                     .build());
         }
 
-        // Palmarès espèces top 10
-        List<PersonalStatsResponse.SpeciesRecord> topSpecies =
-                captureRepository.findSpeciesRecordsForUser(userId, PageRequest.of(0, 10))
-                        .stream()
-                        .map(row -> PersonalStatsResponse.SpeciesRecord.builder()
-                                .speciesName((String) row[0])
-                                .count(((Number) row[1]).longValue())
-                                .recordWeight(row[2] != null ? ((Number) row[2]).doubleValue() : null)
-                                .recordLength(row[3] != null ? ((Number) row[3]).doubleValue() : null)
-                                .build())
-                        .toList();
-
-        // Spots favoris top 5
-        List<PersonalStatsResponse.SpotStat> favoriteSpots =
-                captureRepository.findFavoriteSpotsForUser(userId, PageRequest.of(0, 5))
-                        .stream()
-                        .map(row -> {
-                            double lat = ((Number) row[0]).doubleValue();
-                            double lng = ((Number) row[1]).doubleValue();
-                            long   cnt = ((Number) row[2]).longValue();
-                            return PersonalStatsResponse.SpotStat.builder()
-                                    .lat(lat)
-                                    .lng(lng)
-                                    .count(cnt)
-                                    .label(String.format("%.2f, %.2f", lat, lng))
-                                    .build();
-                        })
-                        .toList();
+        // Spots favoris
+        List<Object[]> spotRows = captureRepository.findFavoriteSpots(userId);
+        List<PersonalStatsResponse.SpotStatDto> favoriteSpots = new ArrayList<>();
+        for (Object[] row : spotRows) {
+            double lat = ((Number) row[0]).doubleValue();
+            double lng = ((Number) row[1]).doubleValue();
+            long   cnt = ((Number) row[2]).longValue();
+            favoriteSpots.add(PersonalStatsResponse.SpotStatDto.builder()
+                    .lat(lat).lng(lng).count(cnt).label("Spot favori").build());
+        }
 
         return PersonalStatsResponse.builder()
                 .totalCaptures(totalCaptures)

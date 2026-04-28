@@ -86,6 +86,7 @@ public class CaptureService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .note(request.getNote())
+                .visibility(request.getVisibility() != null ? request.getVisibility() : "PUBLIC")
                 .caughtAt(request.getCaughtAt())
                 .visibility(visibility)
                 .build();
@@ -162,6 +163,7 @@ public class CaptureService {
         capture.setLatitude(request.getLatitude());
         capture.setLongitude(request.getLongitude());
         capture.setNote(request.getNote());
+        if (request.getVisibility() != null) capture.setVisibility(request.getVisibility());
         capture.setCaughtAt(request.getCaughtAt());
         if (request.getVisibility() != null) {
             try { capture.setVisibility(com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility())); }
@@ -175,10 +177,19 @@ public class CaptureService {
 
     @Transactional
     public void deleteCapture(Long id, User user) {
-        findAndCheckOwner(id, user);
+        Capture capture = findAndCheckOwner(id, user);
+        String photoUrl = capture.getPhotoUrl();
         captureRepository.deleteById(id);
         user.setCaptureCount(Math.max(0, user.getCaptureCount() - 1));
         userRepository.save(user);
+        // Supprime la photo du stockage (Cloudinary ou local)
+        if (photoUrl != null && !photoUrl.isBlank()) {
+            try {
+                cloudinaryService.deletePhoto(photoUrl);
+            } catch (Exception e) {
+                log.warn("Impossible de supprimer la photo lors de la suppression de capture {}: {}", id, e.getMessage());
+            }
+        }
         log.info("Capture {} supprimée par {}", id, user.getEmail());
     }
 

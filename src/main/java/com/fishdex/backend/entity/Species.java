@@ -30,27 +30,80 @@ public class Species {
     @Column(name = "image_url")
     private String imageUrl;
 
-    // ── Champs alignés sur le modèle frontend ────────────────────────────
+    /** Famille taxonomique (ex: Salmonidae) */
+    @Column(length = 100)
+    private String family;
 
-    /** Poids minimum typique en kg (null si inconnu) */
+    // ── Dimensions ────────────────────────────────────────────────────────
+
     @Column(name = "min_weight_kg")
     private Double minWeightKg;
 
-    /** Poids maximum typique en kg (null si inconnu) */
     @Column(name = "max_weight_kg")
     private Double maxWeightKg;
 
-    /** Habitat principal (ex : "Rivières rapides", "Étangs et lacs calmes") */
-    @Column(name = "habitat", length = 200)
-    private String habitat;
+    @Column(name = "min_length_cm")
+    private Double minLengthCm;
 
-    // ── Champs supplémentaires conservés ─────────────────────────────────
+    @Column(name = "max_length_cm")
+    private Double maxLengthCm;
 
     /** Taille légale minimale de capture en cm */
     @Column(name = "min_legal_size")
     private Integer minLegalSize;
 
-    /** Famille taxonomique */
-    @Column(length = 100)
-    private String family;
+    // ── Classification ────────────────────────────────────────────────────
+
+    /**
+     * Types d'eau — valeurs séparées par des virgules.
+     * Ex : "FRESHWATER" ou "FRESHWATER,BRACKISH"
+     * Valeurs valides : FRESHWATER, SALTWATER, BRACKISH
+     */
+    @Column(name = "water_types", length = 100)
+    private String waterTypes;
+
+    /**
+     * Niveau de difficulté : BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+     */
+    @Column(name = "difficulty", length = 20)
+    private String difficulty;
+
+    @Column(name = "conservation_status", length = 100)
+    private String conservationStatus;
+
+    // ── Habitat ───────────────────────────────────────────────────────────
+
+    @Column(name = "habitat", length = 200)
+    private String habitat;
+
+    @Column(name = "habitat_detail", length = 500)
+    private String habitatDetail;
+
+    @Column(name = "preferred_depth", length = 100)
+    private String preferredDepth;
+
+    @Column(name = "temperature", length = 100)
+    private String temperature;
+
+    // ── Données enrichies (JSON) ───────────────────────────────────────────
+
+    /** JSON : [{month:1, status:"GOOD", legalClosure:false}, ...] */
+    @Column(name = "monthly_activity_json", columnDefinition = "TEXT")
+    private String monthlyActivityJson;
+
+    /** JSON : [{hour:0, activityLevel:10}, ...] */
+    @Column(name = "hourly_activity_json", columnDefinition = "TEXT")
+    private String hourlyActivityJson;
+
+    /** JSON : [{id:1, name:"...", type:"NATURAL", effectiveness:5, seasons:[...], conditions:"...", imageUrl:null}, ...] */
+    @Column(name = "baits_json", columnDefinition = "TEXT")
+    private String baitsJson;
+
+    /** JSON : [{id:1, name:"...", description:"...", difficulty:"INTERMEDIATE", bestSeasons:[...], proTip:"...", commonMistake:"..."}, ...] */
+    @Column(name = "techniques_json", columnDefinition = "TEXT")
+    private String techniquesJson;
+
+    /** JSON : [{name:"...", description:"...", budget:"MID", essential:true}, ...] */
+    @Column(name = "equipment_json", columnDefinition = "TEXT")
+    private String equipmentJson;
 }

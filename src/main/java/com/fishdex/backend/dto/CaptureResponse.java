@@ -28,6 +28,7 @@ public class CaptureResponse {
     private Double latitude;
     private Double longitude;
     private String note;
+    private String visibility;
     private LocalDateTime caughtAt;
     private LocalDateTime createdAt;
 
@@ -58,6 +59,7 @@ public class CaptureResponse {
                 .latitude(capture.getLatitude())
                 .longitude(capture.getLongitude())
                 .note(capture.getNote())
+                .visibility(capture.getVisibility() != null ? capture.getVisibility() : "PUBLIC")
                 .caughtAt(capture.getCaughtAt())
                 .createdAt(capture.getCreatedAt())
                 .species(capture.getSpecies() != null

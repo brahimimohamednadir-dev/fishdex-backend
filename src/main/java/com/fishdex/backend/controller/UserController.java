@@ -1,11 +1,17 @@
 package com.fishdex.backend.controller;
 
 import com.fishdex.backend.common.ApiResponse;
-import com.fishdex.backend.dto.*;
+import com.fishdex.backend.dto.BadgeResponse;
+import com.fishdex.backend.dto.CaptureStatsResponse;
+import com.fishdex.backend.dto.PersonalStatsResponse;
+import com.fishdex.backend.dto.PublicProfileResponse;
+import com.fishdex.backend.dto.SessionResponse;
+import com.fishdex.backend.dto.UserStatsResponse;
+import com.fishdex.backend.dto.UpdateUsernameRequest;
+import com.fishdex.backend.dto.UserResponse;
 import com.fishdex.backend.entity.User;
 import com.fishdex.backend.repository.UserRepository;
 import com.fishdex.backend.service.AuthService;
-import com.fishdex.backend.service.GdprService;
 import com.fishdex.backend.service.RefreshTokenService;
 import com.fishdex.backend.service.UserService;
 import jakarta.validation.Valid;
@@ -27,7 +33,6 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final AuthService authService;
     private final UserRepository userRepository;
-    private final GdprService gdprService;
 
     /** GET /api/users/me — Profil de l'utilisateur connecté */
     @GetMapping("/me")
@@ -68,6 +73,26 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.ok(stats));
     }
 
+    /** GET /api/users/me/personal-stats — Statistiques personnelles complètes */
+    @GetMapping("/me/personal-stats")
+    public ResponseEntity<ApiResponse<PersonalStatsResponse>> getPersonalStats(Authentication authentication) {
+        PersonalStatsResponse stats = userService.getPersonalStats(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.ok(stats));
+    }
+
+    /**
+     * GET /api/users/{username} — Profil public d'un utilisateur.
+     * Accessible sans authentification (la relation amis est null si non connecté).
+     */
+    @GetMapping("/{username}")
+    public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
+            @PathVariable String username,
+            Authentication authentication) {
+        String currentEmail = authentication != null ? authentication.getName() : null;
+        PublicProfileResponse profile = userService.getPublicProfile(username, currentEmail);
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
     /** GET /api/users/me/sessions — Sessions actives (multi-device) */
     @GetMapping("/me/sessions")
     public ResponseEntity<ApiResponse<List<SessionResponse>>> getMySessions(
@@ -98,43 +123,6 @@ public class UserController {
 
         authService.logout(userDetails.getUsername());
         return ResponseEntity.noContent().build();
-    }
-
-    /** GET /api/users/{username} — Profil public d'un utilisateur */
-    @GetMapping("/{username}")
-    public ResponseEntity<ApiResponse<PublicProfileResponse>> getPublicProfile(
-            @PathVariable String username,
-            Authentication authentication) {
-
-        String viewerEmail = authentication != null ? authentication.getName() : null;
-        PublicProfileResponse profile = userService.getPublicProfile(username, viewerEmail);
-        return ResponseEntity.ok(ApiResponse.ok(profile));
-    }
-
-    /** GET /api/users/me/personal-stats — Stats annuelles enrichies */
-    @GetMapping("/me/personal-stats")
-    public ResponseEntity<ApiResponse<PersonalStatsResponse>> getPersonalStats(
-            Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                userService.getPersonalStats(authentication.getName())));
-    }
-
-    // ── RGPD ─────────────────────────────────────────────────────────────────
-
-    /** GET /api/users/me/export — RGPD Article 20 : portabilité des données */
-    @GetMapping("/me/export")
-    public ResponseEntity<ApiResponse<GdprExportResponse>> exportMyData(Authentication authentication) {
-        GdprExportResponse export = gdprService.exportMyData(authentication.getName());
-        return ResponseEntity.ok(ApiResponse.ok("Export de vos données personnelles", export));
-    }
-
-    /** DELETE /api/users/me — RGPD Article 17 : droit à l'effacement */
-    @DeleteMapping("/me")
-    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(
-            @Valid @RequestBody DeleteAccountRequest request,
-            Authentication authentication) {
-        gdprService.deleteMyAccount(authentication.getName(), request.getPassword());
-        return ResponseEntity.ok(ApiResponse.ok("Votre compte a été supprimé définitivement", null));
     }
 
     /**
