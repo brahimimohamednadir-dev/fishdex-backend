@@ -182,7 +182,7 @@ public class SpeciesResponse {
                         .id(t.getId())
                         .content(t.getContent())
                         .authorUsername(t.getUser().getUsername())
-                        .upvotes(t.getUpvotes())
+                        .upvotes(t.getUpvoteCount())
                         .hasUpvoted(false) // enrichi dans SpeciesService quand user connecté
                         .createdAt(t.getCreatedAt() != null ? t.getCreatedAt().toString() : null)
                         .build())

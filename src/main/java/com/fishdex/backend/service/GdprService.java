@@ -96,7 +96,7 @@ public class GdprService {
 
         // 2. Activité sociale
         notificationRepository.deleteAllByRecipient(user);
-        notificationRepository.deleteAllByActor(user);
+        notificationRepository.deleteAllByActorUsername(user.getUsername());
         friendshipRepository.deleteAllByUserOrFriend(user, user);
         captureReactionRepository.deleteAllByUser(user);
         captureCommentRepository.deleteAllByUser(user);

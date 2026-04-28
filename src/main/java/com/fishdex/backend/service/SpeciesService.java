@@ -38,7 +38,7 @@ public class SpeciesService {
     @Transactional(readOnly = true)
     public Page<SpeciesResponse> getSpecies(String search, Pageable pageable, String userEmail) {
         Page<Species> page = (search != null && !search.isBlank())
-                ? speciesRepository.findByCommonNameContainingIgnoreCase(search.trim(), pageable)
+                ? speciesRepository.searchByNameOrFamily(search.trim(), pageable)
                 : speciesRepository.findAll(pageable);
 
         User user = resolveUser(userEmail);
@@ -72,7 +72,7 @@ public class SpeciesService {
                 .species(species)
                 .user(user)
                 .content(content.trim())
-                .upvotes(0)
+                .upvoteCount(0)
                 .build());
 
         log.info("Conseil ajouté pour {} par {}", species.getCommonName(), userEmail);
@@ -91,12 +91,12 @@ public class SpeciesService {
             // Toggle : retirer le upvote
             upvoteRepository.findByTipIdAndUserId(tipId, user.getId())
                     .ifPresent(upvoteRepository::delete);
-            tip.setUpvotes(Math.max(0, tip.getUpvotes() - 1));
+            tip.setUpvoteCount(Math.max(0, tip.getUpvoteCount() - 1));
             tip = tipRepository.save(tip);
             return toTipDto(tip, false);
         } else {
             upvoteRepository.save(SpeciesTipUpvote.builder().tip(tip).user(user).build());
-            tip.setUpvotes(tip.getUpvotes() + 1);
+            tip.setUpvoteCount(tip.getUpvoteCount() + 1);
             tip = tipRepository.save(tip);
             return toTipDto(tip, true);
         }
@@ -106,7 +106,7 @@ public class SpeciesService {
 
     private SpeciesResponse buildResponse(Species species, User user, boolean withTips) {
         List<SpeciesTip> tips = withTips
-                ? tipRepository.findBySpeciesIdOrderByUpvotesDescCreatedAtDesc(species.getId())
+                ? tipRepository.findBySpeciesIdOrderByUpvoteCountDescCreatedAtDesc(species.getId())
                 : Collections.emptyList();
 
         boolean caught = false;
@@ -198,7 +198,7 @@ public class SpeciesService {
                 .id(tip.getId())
                 .content(tip.getContent())
                 .authorUsername(tip.getUser().getUsername())
-                .upvotes(tip.getUpvotes())
+                .upvotes(tip.getUpvoteCount())
                 .hasUpvoted(hasUpvoted)
                 .createdAt(tip.getCreatedAt() != null ? tip.getCreatedAt().toString() : null)
                 .build();

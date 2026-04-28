@@ -51,6 +51,7 @@ public class CaptureService {
     private final SpeciesRepository speciesRepository;
     private final UserRepository userRepository;
     private final WeatherService weatherService;
+    private final CloudinaryService cloudinaryService;
 
     // ── Création ──────────────────────────────────────────────────────────
 
@@ -67,15 +68,11 @@ public class CaptureService {
         Species species = resolveSpecies(request);
         String speciesName = resolveSpeciesName(request, species);
 
-        com.fishdex.backend.entity.Capture.Visibility visibility =
-                com.fishdex.backend.entity.Capture.Visibility.PUBLIC;
+        Capture.Visibility visibility = Capture.Visibility.PUBLIC;
         if (request.getVisibility() != null) {
-            try { visibility = com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility()); }
+            try { visibility = Capture.Visibility.valueOf(request.getVisibility()); }
             catch (IllegalArgumentException ignored) {}
         }
-
-        Species species = resolveSpecies(request);
-        String speciesName = resolveSpeciesName(request, species);
 
         Capture capture = Capture.builder()
                 .user(user)
@@ -86,7 +83,6 @@ public class CaptureService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .note(request.getNote())
-                .visibility(request.getVisibility() != null ? request.getVisibility() : "PUBLIC")
                 .caughtAt(request.getCaughtAt())
                 .visibility(visibility)
                 .build();
@@ -163,10 +159,9 @@ public class CaptureService {
         capture.setLatitude(request.getLatitude());
         capture.setLongitude(request.getLongitude());
         capture.setNote(request.getNote());
-        if (request.getVisibility() != null) capture.setVisibility(request.getVisibility());
         capture.setCaughtAt(request.getCaughtAt());
         if (request.getVisibility() != null) {
-            try { capture.setVisibility(com.fishdex.backend.entity.Capture.Visibility.valueOf(request.getVisibility())); }
+            try { capture.setVisibility(Capture.Visibility.valueOf(request.getVisibility())); }
             catch (IllegalArgumentException ignored) {}
         }
 

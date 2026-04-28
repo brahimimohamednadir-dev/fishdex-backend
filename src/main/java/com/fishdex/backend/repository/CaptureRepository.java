@@ -1,10 +1,12 @@
 package com.fishdex.backend.repository;
 
 import com.fishdex.backend.entity.Capture;
+import com.fishdex.backend.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -45,6 +47,39 @@ public interface CaptureRepository extends JpaRepository<Capture, Long>,
     List<Object[]> findMonthlyCaptures(@Param("userId") Long userId, @Param("since") LocalDateTime since);
 
     long countByUserId(Long userId);
+
+    /** RGPD Art. 20 — export */
+    List<Capture> findByUserOrderByCaughtAtDesc(User user);
+
+    /** Dernière capture d'un utilisateur (pour le profil ami) */
+    java.util.Optional<Capture> findTopByUserIdOrderByCreatedAtDesc(Long userId);
+
+    /** Feed : captures des amis + les miennes (PUBLIC ou FRIENDS) */
+    @Query("SELECT c FROM Capture c WHERE " +
+           "(c.user.id IN :friendIds AND c.visibility IN (com.fishdex.backend.entity.Capture$Visibility.PUBLIC, com.fishdex.backend.entity.Capture$Visibility.FRIENDS)) " +
+           "OR (c.user.id = :userId AND c.visibility != com.fishdex.backend.entity.Capture$Visibility.PRIVATE) " +
+           "ORDER BY c.caughtAt DESC")
+    Page<Capture> findFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                                   @Param("userId") Long userId,
+                                   Pageable pageable);
+
+    /** Captures publiques (pour les utilisateurs sans amis) */
+    @Query("SELECT c FROM Capture c WHERE c.visibility = com.fishdex.backend.entity.Capture$Visibility.PUBLIC ORDER BY c.caughtAt DESC")
+    Page<Capture> findPublicCaptures(Pageable pageable);
+
+    /** Nombre de nouvelles captures dans le feed depuis une date */
+    @Query("SELECT COUNT(c) FROM Capture c WHERE " +
+           "(c.user.id IN :friendIds AND c.visibility IN (com.fishdex.backend.entity.Capture$Visibility.PUBLIC, com.fishdex.backend.entity.Capture$Visibility.FRIENDS)) " +
+           "OR (c.user.id = :userId AND c.visibility != com.fishdex.backend.entity.Capture$Visibility.PRIVATE) " +
+           "AND c.caughtAt > :since")
+    long countNewFeedCaptures(@Param("friendIds") List<Long> friendIds,
+                              @Param("userId") Long userId,
+                              @Param("since") java.time.LocalDateTime since);
+
+    /** RGPD Art. 17 — suppression en cascade */
+    @Modifying
+    @Query("DELETE FROM Capture c WHERE c.user = :user")
+    void deleteAllByUser(@Param("user") User user);
 
     // ── Statistiques ─────────────────────────────────────────────────────
 

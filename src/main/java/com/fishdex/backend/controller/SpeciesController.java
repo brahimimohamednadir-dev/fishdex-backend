@@ -25,7 +25,7 @@ public class SpeciesController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(ApiResponse.ok(speciesService.getSpecies(search, pageable)));
+        return ResponseEntity.ok(ApiResponse.ok(speciesService.getSpecies(search, pageable, null)));
     }
 
     /** GET /api/species/{id} — Fiche détaillée avec communityTips */

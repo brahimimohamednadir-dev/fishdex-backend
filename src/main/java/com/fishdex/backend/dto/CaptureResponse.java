@@ -37,7 +37,6 @@ public class CaptureResponse {
      * Correspond au champ "species: Species | null" du frontend.
      */
     private SpeciesResponse species;
-    private String visibility;
 
     // ── Météo ─────────────────────────────────────────────────────────────
     private Double  weatherTemp;
@@ -59,13 +58,12 @@ public class CaptureResponse {
                 .latitude(capture.getLatitude())
                 .longitude(capture.getLongitude())
                 .note(capture.getNote())
-                .visibility(capture.getVisibility() != null ? capture.getVisibility() : "PUBLIC")
+                .visibility(capture.getVisibility() != null ? capture.getVisibility().name() : "PUBLIC")
                 .caughtAt(capture.getCaughtAt())
                 .createdAt(capture.getCreatedAt())
                 .species(capture.getSpecies() != null
                         ? SpeciesResponse.from(capture.getSpecies())
                         : null)
-                .visibility(capture.getVisibility() != null ? capture.getVisibility().name() : "PUBLIC")
                 .weatherTemp(capture.getWeatherTemp())
                 .weatherWind(capture.getWeatherWind())
                 .weatherPressure(capture.getWeatherPressure())

@@ -168,10 +168,10 @@ public class UserService {
             });
             User me = userRepository.findByEmail(currentUserEmail).orElse(null);
             if (me != null && !me.getId().equals(targetId)) {
-                Optional<Friendship> f = friendshipRepository.findBetweenUsers(me.getId(), targetId);
+                Optional<Friendship> f = friendshipRepository.findBetween(me, target);
                 if (f.isPresent()) {
                     Friendship fr = f.get();
-                    if (fr.getStatus() == Friendship.FriendshipStatus.ACCEPTED) {
+                    if (fr.getStatus() == Friendship.Status.ACCEPTED) {
                         friendshipStatus = "ACCEPTED";
                     } else if (fr.getRequester().getId().equals(me.getId())) {
                         friendshipStatus = "PENDING_SENT";
@@ -190,7 +190,7 @@ public class UserService {
                 .username(target.getUsername())
                 .userTag(String.format("%04d", targetId % 10000))
                 .memberSince(target.getCreatedAt() != null
-                        ? target.getCreatedAt().toLocalDate().toString() : null)
+                        ? target.getCreatedAt() : null)
                 .totalCaptures(totalCaptures)
                 .distinctSpecies(distinctSpecies)
                 .heaviestCatchKg(heaviestKg)
@@ -239,21 +239,21 @@ public class UserService {
         // Captures mensuelles — 12 derniers mois
         LocalDateTime since12months = now.minusMonths(12);
         List<Object[]> monthRows = captureRepository.findMonthlyCaptures(userId, since12months);
-        List<PersonalStatsResponse.MonthStatDto> monthlyCaptures = new ArrayList<>();
+        List<PersonalStatsResponse.MonthStat> monthlyCaptures = new ArrayList<>();
         for (Object[] row : monthRows) {
             int month  = ((Number) row[1]).intValue();
             long count = ((Number) row[2]).longValue();
             String label = java.time.Month.of(month).getDisplayName(TextStyle.SHORT, Locale.FRENCH);
-            monthlyCaptures.add(PersonalStatsResponse.MonthStatDto.builder()
+            monthlyCaptures.add(PersonalStatsResponse.MonthStat.builder()
                     .month(month).label(label).count(count).build());
         }
 
         // Top espèces avec records
         List<Object[]> speciesRows = captureRepository
                 .findTopSpeciesWithRecords(userId, PageRequest.of(0, 5));
-        List<PersonalStatsResponse.SpeciesRecordDto> topSpecies = new ArrayList<>();
+        List<PersonalStatsResponse.SpeciesRecord> topSpecies = new ArrayList<>();
         for (Object[] row : speciesRows) {
-            topSpecies.add(PersonalStatsResponse.SpeciesRecordDto.builder()
+            topSpecies.add(PersonalStatsResponse.SpeciesRecord.builder()
                     .speciesName((String) row[0])
                     .count(((Number) row[1]).longValue())
                     .recordWeight(row[2] != null ? ((Number) row[2]).doubleValue() : null)
@@ -263,12 +263,12 @@ public class UserService {
 
         // Spots favoris
         List<Object[]> spotRows = captureRepository.findFavoriteSpots(userId);
-        List<PersonalStatsResponse.SpotStatDto> favoriteSpots = new ArrayList<>();
+        List<PersonalStatsResponse.SpotStat> favoriteSpots = new ArrayList<>();
         for (Object[] row : spotRows) {
             double lat = ((Number) row[0]).doubleValue();
             double lng = ((Number) row[1]).doubleValue();
             long   cnt = ((Number) row[2]).longValue();
-            favoriteSpots.add(PersonalStatsResponse.SpotStatDto.builder()
+            favoriteSpots.add(PersonalStatsResponse.SpotStat.builder()
                     .lat(lat).lng(lng).count(cnt).label("Spot favori").build());
         }
 

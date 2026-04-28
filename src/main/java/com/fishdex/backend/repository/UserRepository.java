@@ -20,4 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** Recherche d'utilisateurs par pseudo (exclut l'utilisateur courant) */
     List<User> findByUsernameContainingIgnoreCaseAndIdNot(String username, Long excludeId);
+
+    /** Recherche par tag unique (#12345) */
+    Optional<User> findByUserTag(String userTag);
+
+    boolean existsByUserTag(String userTag);
 }

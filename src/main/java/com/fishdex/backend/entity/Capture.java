@@ -51,11 +51,6 @@ public class Capture {
     @Column(length = 500)
     private String note;
 
-    /** Visibilité : PUBLIC | FRIENDS_ONLY | PRIVATE */
-    @Column(name = "visibility", length = 20)
-    @Builder.Default
-    private String visibility = "PUBLIC";
-
     @Column(name = "caught_at", nullable = false)
     private LocalDateTime caughtAt;
 
