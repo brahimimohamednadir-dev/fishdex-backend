@@ -68,6 +68,9 @@ public class AuthService implements UserDetailsService {
                 .userTag(generateUniqueTag())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .emailVerified(false)
+                .marketingConsent(Boolean.TRUE.equals(request.getMarketingConsent()))
+                .analyticsConsent(Boolean.TRUE.equals(request.getAnalyticsConsent()))
+                .consentsUpdatedAt(java.time.LocalDateTime.now())
                 .build();
 
         User saved = userRepository.save(user);

@@ -74,6 +74,19 @@ public class User {
     @Builder.Default
     private Boolean twoFactorEnabled = false;
 
+    // ── Consentements RGPD ───────────────────────────────────────────────
+
+    @Column(name = "marketing_consent", nullable = false)
+    @Builder.Default
+    private Boolean marketingConsent = false;
+
+    @Column(name = "analytics_consent", nullable = false)
+    @Builder.Default
+    private Boolean analyticsConsent = false;
+
+    @Column(name = "consents_updated_at")
+    private LocalDateTime consentsUpdatedAt;
+
     // ── Timestamps ────────────────────────────────────────────────────────
 
     @CreationTimestamp

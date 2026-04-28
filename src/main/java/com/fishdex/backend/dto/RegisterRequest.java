@@ -28,4 +28,8 @@ public class RegisterRequest {
     @NotNull(message = "L'acceptation des conditions est obligatoire")
     @AssertTrue(message = "Vous devez accepter les conditions d'utilisation et la politique de confidentialité")
     private Boolean privacyAccepted;
+
+    /** RGPD — consentements optionnels (défaut : refusé) */
+    private Boolean marketingConsent = false;
+    private Boolean analyticsConsent = false;
 }
